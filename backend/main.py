@@ -47,6 +47,21 @@ Base.metadata.create_all(bind=engine)
 app = FastAPI(title="Guardian Shop API")
 
 # ---------------------------------------------------------
+#   سرو مستقیم پوشه‌ی images توسط خودِ بک‌اند
+
+#   قبلاً چون فرانت‌اند و بک‌اند روی یه سرور بودن، مسیر نسبی
+#   (../images/...) کافی بود. الان که هرکدوم روی یه دامنه‌ی
+#   جدان (فرانت روی گیت‌هاب، بک‌اند روی Render)، عکس‌هایی که
+#   از پنل ادمین آپلود می‌شن باید از خودِ همین بک‌اند قابل
+#   دسترسی باشن، با یه آدرس کامل.
+# ---------------------------------------------------------
+
+IMAGES_DIR_FOR_MOUNT = Path(__file__).resolve().parent.parent / "images"
+IMAGES_DIR_FOR_MOUNT.mkdir(exist_ok=True)
+
+app.mount("/images", StaticFiles(directory=IMAGES_DIR_FOR_MOUNT), name="images")
+
+# ---------------------------------------------------------
 #   RATE LIMITING (جلوگیری از Brute Force و اسپم درخواست)
 # ---------------------------------------------------------
 
@@ -204,8 +219,9 @@ async def upload_image(request: Request, file: UploadFile = File(...)):
     with open(destination, "wb") as f:
         f.write(contents)
 
-    # این مسیر دقیقاً همون فرمتیه که بقیه‌ی عکس‌های سایت استفاده می‌کنن
-    return {"path": f"../images//{safe_name}"}
+    # آدرس کامل، چون فرانت‌اند ممکنه روی یه دامنه‌ی کاملاً جدا باشه
+    # (مثلاً گیت‌هاب پیجز) و مسیر نسبی دیگه کار نمی‌کنه
+    return {"path": f"{str(request.base_url).rstrip('/')}/images/{safe_name}"}
 
 
 # ---------------------------------------------------------
