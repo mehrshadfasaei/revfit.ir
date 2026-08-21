@@ -3,7 +3,7 @@
         (باید قبل از این فایل لینک بشه):
         mockProducts, getProducts, formatPrice,
         renderStars, showToast, addToCart,
-        PLACEHOLDER_RATING, PLACEHOLDER_REVIEWS
+        PLACEHOLDER_RATING
 ====================================*/
 
 
