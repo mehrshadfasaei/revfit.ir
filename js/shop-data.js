@@ -16,7 +16,7 @@
         یا اکستنشن Live Server توی VS Code.
 ====================================*/
 
-const API_BASE_URL = "http://127.0.0.1:8000";
+const API_BASE_URL = "https://revfit-ir.onrender.com";
 
 const PLACEHOLDER_RATING  = 4.8;
 
