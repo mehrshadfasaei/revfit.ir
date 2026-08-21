@@ -1,4 +1,57 @@
 /*====================================
+        CLIENT ERROR LOGGING
+
+        هر خطای واقعی که توی مرورگر مشتری‌ها اتفاق میفته
+        (خطای جاوااسکریپت، fetch شکست‌خورده و...) رو
+        می‌فرسته بک‌اند تا توی پنل ادمین ببینیمش.
+====================================*/
+
+function logClientError(message, extra = {}){
+
+    try{
+
+        if(typeof API_BASE_URL === "undefined") return;
+
+        fetch(`${API_BASE_URL}/api/log-error`, {
+
+            method: "POST",
+
+            headers: { "Content-Type": "application/json" },
+
+            body: JSON.stringify({
+
+                message: String(message).slice(0, 1000),
+
+                pageUrl: window.location.href,
+
+                userAgent: navigator.userAgent,
+
+                stack: extra.stack ? String(extra.stack).slice(0, 2000) : null
+
+            }),
+
+            keepalive: true
+
+        }).catch(() => {});   // اگه خودِ لاگ‌فرستادن هم fail بشه، دیگه کاری نمی‌کنیم (جلوگیری از حلقه‌ی بی‌نهایت)
+
+    }catch(e){}
+
+}
+
+window.addEventListener("error", (e) => {
+
+    logClientError(e.message || "خطای ناشناخته", { stack: e.error?.stack });
+
+});
+
+window.addEventListener("unhandledrejection", (e) => {
+
+    logClientError(`Promise rejection: ${e.reason?.message || e.reason}`, { stack: e.reason?.stack });
+
+});
+
+
+/*====================================
         PAGE LOADER
 
         وقتی کل صفحه (عکس‌ها هم) کامل لود شد،

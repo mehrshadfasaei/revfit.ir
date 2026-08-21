@@ -500,6 +500,40 @@ def get_dashboard_stats(db: Session = Depends(get_db)):
     }
 
 
+# ---------------------------------------------------------
+#   CLIENT ERROR LOGGING
+
+#   فرانت‌اند هر خطای واقعی که توی مرورگر مشتری‌ها اتفاق میفته
+#   رو می‌فرسته اینجا؛ ما لاگش می‌کنیم تا توی پنل ادمین ببینیم
+#   کاربرا دقیقاً به چه مشکلاتی برخوردن.
+# ---------------------------------------------------------
+
+@app.post("/api/log-error")
+@limiter.limit("20/minute")
+def log_client_error(request: Request, payload: schemas.ErrorLogCreate, db: Session = Depends(get_db)):
+    db_log = models.ErrorLog(
+        message=sanitize_text(payload.message)[:1000],
+        page_url=sanitize_text(payload.pageUrl)[:500] if payload.pageUrl else None,
+        user_agent=sanitize_text(payload.userAgent)[:500] if payload.userAgent else None,
+        stack=sanitize_text(payload.stack)[:2000] if payload.stack else None,
+    )
+    db.add(db_log)
+    db.commit()
+    return {"logged": True}
+
+
+@app.get("/api/admin/error-logs", response_model=list[schemas.ErrorLogOut], dependencies=[Depends(verify_admin)])
+def list_error_logs(db: Session = Depends(get_db)):
+    return db.query(models.ErrorLog).order_by(models.ErrorLog.created_at.desc()).limit(200).all()
+
+
+@app.delete("/api/admin/error-logs", dependencies=[Depends(verify_admin)])
+def clear_error_logs(db: Session = Depends(get_db)):
+    db.query(models.ErrorLog).delete()
+    db.commit()
+    return {"cleared": True}
+
+
 ALLOWED_STATUSES = ["pending", "paid", "shipped", "delivered"]
 
 
