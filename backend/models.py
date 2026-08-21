@@ -110,3 +110,19 @@ class OrderItem(Base):
     quantity = Column(Integer, nullable=False)
 
     order = relationship("Order", back_populates="items")
+
+
+class ErrorLog(Base):
+    """خطاهایی که واقعاً توی مرورگر مشتری‌ها اتفاق میفته - نه
+    خطاهای بک‌اند. اینا معمولاً چیزایی هستن که خودمون موقع تست
+    محلی هیچ‌وقت نمی‌بینیم (مثلاً یه مرورگر خاص، یه اتصال کند،
+    یه دکمه که یه‌جا شکسته)."""
+
+    __tablename__ = "error_logs"
+
+    id = Column(Integer, primary_key=True, index=True)
+    message = Column(String, nullable=False)
+    page_url = Column(String, nullable=True)
+    user_agent = Column(String, nullable=True)
+    stack = Column(String, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)

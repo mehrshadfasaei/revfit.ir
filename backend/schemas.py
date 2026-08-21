@@ -134,3 +134,22 @@ class OrderOut(BaseModel):
 
     class Config:
         orm_mode = True
+
+
+class ErrorLogCreate(BaseModel):
+    message: str
+    pageUrl: Optional[str] = None
+    userAgent: Optional[str] = None
+    stack: Optional[str] = None
+
+
+class ErrorLogOut(BaseModel):
+    id: int
+    message: str
+    page_url: Optional[str] = None
+    user_agent: Optional[str] = None
+    stack: Optional[str] = None
+    created_at: datetime
+
+    class Config:
+        orm_mode = True

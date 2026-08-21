@@ -123,6 +123,12 @@
 
             </a>
 
+            <a href="#" class="admin-nav-link" data-tab="error-logs">
+
+                <i class="fa-solid fa-bug"></i> لاگ خطاها
+
+            </a>
+
         </nav>
 
         <a href="index.html" class="admin-back-link">
@@ -338,6 +344,60 @@
                     </thead>
 
                     <tbody id="adminInventoryTableBody">
+
+                        <!-- Injected by admin.js -->
+
+                    </tbody>
+
+                </table>
+
+            </div>
+
+        </section>
+
+        <!-- ERROR LOGS TAB -->
+
+        <section class="admin-tab-content" id="tab-error-logs">
+
+            <div class="admin-page-header">
+
+                <h1>لاگ خطاها</h1>
+
+                <button class="admin-btn-primary" id="clearErrorLogsBtn" style="background:#e0445b;">
+
+                    <i class="fa-solid fa-trash"></i> پاک‌کردن همه
+
+                </button>
+
+            </div>
+
+            <p class="admin-page-note">
+
+                این خطاهایی هستن که واقعاً توی مرورگر مشتری‌ها اتفاق افتاده (نه توی خود سیستم تو) — مثل مشکل اتصال، خطای جاوااسکریپت، یا شکست‌خوردن ثبت سفارش.
+
+            </p>
+
+            <div class="admin-table-wrap">
+
+                <table class="admin-table">
+
+                    <thead>
+
+                        <tr>
+
+                            <th>زمان</th>
+
+                            <th>پیام خطا</th>
+
+                            <th>صفحه</th>
+
+                            <th>مرورگر/دستگاه</th>
+
+                        </tr>
+
+                    </thead>
+
+                    <tbody id="adminErrorLogsTableBody">
 
                         <!-- Injected by admin.js -->
 
