@@ -275,6 +275,8 @@ document.querySelectorAll(".admin-nav-link").forEach(link => {
 
         document.getElementById(`tab-${link.dataset.tab}`).classList.add("active");
 
+        if(link.dataset.tab === "error-logs") loadErrorLogs();
+
     });
 
 });
@@ -568,6 +570,99 @@ document.getElementById("adminInventoryTableBody").addEventListener("click", asy
     }
 
 });
+
+
+/*====================================
+        ERROR LOGS TAB
+====================================*/
+
+async function loadErrorLogs(){
+
+    const tbody = document.getElementById("adminErrorLogsTableBody");
+
+    if(!tbody) return;
+
+    tbody.innerHTML = `<tr class="admin-empty-row"><td colspan="4">در حال بارگذاری...</td></tr>`;
+
+    try{
+
+        const res = await fetch(`${API_BASE_URL}/api/admin/error-logs`, {
+
+            headers: adminHeaders()
+
+        });
+
+        if(!res.ok) throw new Error("خطا در دریافت لاگ‌ها");
+
+        const logs = await res.json();
+
+        if(logs.length === 0){
+
+            tbody.innerHTML = `<tr class="admin-empty-row"><td colspan="4">تا الان هیچ خطایی ثبت نشده ✅</td></tr>`;
+
+            return;
+
+        }
+
+        tbody.innerHTML = logs.map(log => `
+
+            <tr>
+
+                <td>${formatTehranDateTime(log.created_at)}</td>
+
+                <td>${log.message}</td>
+
+                <td>${log.page_url ? `<a href="${log.page_url}" target="_blank">${new URL(log.page_url).pathname}</a>` : "-"}</td>
+
+                <td style="font-size:11px;color:var(--secondary);">${log.user_agent || "-"}</td>
+
+            </tr>
+
+        `).join("");
+
+    }catch(err){
+
+        console.error(err);
+
+        tbody.innerHTML = `<tr class="admin-empty-row"><td colspan="4">اتصال به بک‌اند برقرار نشد.</td></tr>`;
+
+    }
+
+}
+
+const clearErrorLogsBtn = document.getElementById("clearErrorLogsBtn");
+
+if(clearErrorLogsBtn){
+
+    clearErrorLogsBtn.addEventListener("click", async () => {
+
+        if(!confirm("مطمئنی می‌خوای همه‌ی لاگ‌های خطا رو پاک کنی؟")) return;
+
+        try{
+
+            const res = await fetch(`${API_BASE_URL}/api/admin/error-logs`, {
+
+                method: "DELETE",
+
+                headers: adminHeaders()
+
+            });
+
+            if(!res.ok) throw new Error("پاک‌کردن با مشکل مواجه شد");
+
+            loadErrorLogs();
+
+        }catch(err){
+
+            console.error(err);
+
+            alert("پاک‌کردن لاگ‌ها با مشکل مواجه شد.");
+
+        }
+
+    });
+
+}
 
 
 document.getElementById("adminProductsTableBody").addEventListener("click", (e) => {
