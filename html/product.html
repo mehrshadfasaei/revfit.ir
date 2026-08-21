@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>جزئیات محصول | RevFit</title>
+
+    <link rel="icon" type="image/png" href="../images//logo1_transparent.png">
+
+
+    <link rel="stylesheet" href="../css/style.css">
+
+    <link rel="stylesheet" href="../css/products.css">
+
+    <link rel="stylesheet" href="../css/product.css">
+
+    <link
+        href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
+
+    <link
+        rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css">
+
+</head>
+
+<body>
+
+<!--=========================================
+                PAGE LOADER
+==========================================-->
+
+<div class="page-loader" id="pageLoader">
+
+    <div class="loader-spinner"></div>
+
+</div>
+
+<!--=========================================
+                MARQUEE BANNER
+==========================================-->
+
+<div class="marquee-banner">
+
+    <div class="marquee-track">
+
+        <div class="marquee-group">
+
+            <span>۱۰٪ تخفیف برای خرید دوم</span>
+
+            <span>ارسال رایگان با خرید دو محصول</span>
+
+            <span>۱۰٪ تخفیف برای خرید دوم</span>
+
+        </div>
+
+        <div class="marquee-group" aria-hidden="true">
+
+            <span>۱۰٪ تخفیف برای خرید دوم</span>
+
+            <span>ارسال رایگان با خرید دو محصول</span>
+
+            <span>۱۰٪ تخفیف برای خرید دوم</span>
+
+        </div>
+
+    </div>
+
+</div>
+
+<!--=========================================
+                HEADER
+==========================================-->
+
+<header class="with-marquee">
+
+<div class="container">
+
+<nav>
+
+<div class="logo">
+
+<a href="index.html"><img src="../images//logo1_transparent.png" alt="Logo"></a>
+
+</div>
+
+<ul class="nav-links">
+
+<li class="mobile-menu-header">
+
+<button class="mobile-menu-close" id="mobileMenuClose"><i class="fa-solid fa-xmark"></i></button>
+
+</li>
+
+<li class="mobile-menu-search-row" id="mobileMenuSearchTrigger">
+
+<i class="fa-solid fa-magnifying-glass"></i> جستجوی محصول...
+
+</li>
+
+<li><a href="index.html">خانه</a></li>
+
+<li><a href="products.html" class="active-link">محصولات</a></li>
+
+
+<li><a href="about.html">درباره ما</a></li>
+
+<li><a href="contact.html">تماس با ما</a></li>
+
+
+<li class="mobile-menu-link"><a href="cart.html"><i class="fa-solid fa-cart-shopping"></i> سبد خرید <span class="cart-count mobile-cart-count">0</span></a></li>
+
+</ul>
+
+<div class="nav-icons">
+
+<a href="#" class="search-trigger" id="searchTrigger"><i class="fa-solid fa-magnifying-glass"></i></a>
+
+
+<a href="cart.html" class="cart-icon-link"><i class="fa-solid fa-cart-shopping"></i><span class="cart-count" id="cartCount">0</span></a>
+
+</div>
+
+<div class="menu-btn">
+
+<i class="fa-solid fa-bars"></i>
+
+</div>
+
+</nav>
+
+</div>
+
+</header>
+
+<!--=========================================
+            BREADCRUMB
+==========================================-->
+
+<section class="product-breadcrumb-section">
+
+    <div class="container">
+
+        <div class="breadcrumb">
+
+            <a href="index.html">خانه</a>
+
+            <i class="fa-solid fa-chevron-left"></i>
+
+            <a href="products.html">محصولات</a>
+
+            <i class="fa-solid fa-chevron-left"></i>
+
+            <span id="breadcrumbTitle">در حال بارگذاری...</span>
+
+        </div>
+
+    </div>
+
+</section>
+
+<!--=========================================
+            PRODUCT MAIN
+==========================================-->
+
+<section class="product-main">
+
+    <div class="container">
+
+        <div class="product-main-grid">
+
+            <!-- GALLERY -->
+
+            <div class="product-gallery">
+
+                <div class="main-image">
+
+                    <img src="" alt="">
+
+                </div>
+
+                <div class="thumbs" id="productThumbs">
+
+                    <!-- Thumbnails injected by product.js -->
+
+                </div>
+
+            </div>
+
+            <!-- DETAILS -->
+
+            <div class="product-details">
+
+                <h1 id="productTitle">در حال بارگذاری...</h1>
+
+                <span class="stock-badge" id="stockBadge" style="display:none;">ناموجود</span>
+
+                <div class="product-rating">
+
+                    <span class="stars" id="productStars"></span>
+
+
+                </div>
+
+                <span class="price" id="productPrice"></span>
+
+                <p class="product-short-desc" id="productDescription"></p>
+
+                <div class="size-row">
+
+                    <span class="size-label">سایز:</span>
+
+                    <div class="size-options" id="sizeOptions">
+
+                        <button type="button" class="size-btn" data-size="S">S</button>
+
+                        <button type="button" class="size-btn" data-size="M">M</button>
+
+                        <button type="button" class="size-btn" data-size="L">L</button>
+
+                        <button type="button" class="size-btn" data-size="XL">XL</button>
+
+                        <button type="button" class="size-btn" data-size="2XL">2XL</button>
+
+                    </div>
+
+                    <p class="selected-size-display" id="selectedSizeDisplay"></p>
+
+                </div>
+
+                <div class="quantity-row">
+
+                    <span class="quantity-label">تعداد:</span>
+
+                    <div class="quantity">
+
+                        <button type="button">−</button>
+
+                        <input type="text" value="1" readonly>
+
+                        <button type="button">+</button>
+
+                    </div>
+
+                </div>
+
+                <div class="product-actions-row">
+
+                    <button class="add-cart">
+
+                        <i class="fa-solid fa-cart-shopping"></i> افزودن به سبد خرید
+
+                    </button>
+
+                    <button class="share-btn" title="اشتراک‌گذاری">
+
+                        <i class="fa-solid fa-share-nodes"></i>
+
+                    </button>
+
+                </div>
+
+                <button class="buy-now-btn" id="buyNowBtn">
+
+                    خرید سریع <i class="fa-solid fa-bolt"></i>
+
+                </button>
+
+                <div class="product-accordion">
+
+                    <div class="accordion-item">
+
+                        <button type="button" class="accordion-header active" data-accordion="specs">
+
+                            <span>مشخصات محصول</span>
+
+                            <span class="accordion-icon">−</span>
+
+                        </button>
+
+                        <div class="accordion-body open" id="accordionSpecs">
+
+                            <ul class="product-specs" id="productSpecs">
+
+                                <!-- Specs injected by product.js -->
+
+                            </ul>
+
+                        </div>
+
+                    </div>
+
+                    <div class="accordion-item">
+
+                        <button type="button" class="accordion-header" data-accordion="shipping">
+
+                            <span>ارسال و بازگشت کالا</span>
+
+                            <span class="accordion-icon">+</span>
+
+                        </button>
+
+                        <div class="accordion-body" id="accordionShipping">
+
+                            <p class="accordion-text">
+
+                                ارسال به سراسر کشور از طریق پست پیشتاز، معمولاً بین ۲ تا ۵ روز کاری.
+                                در صورت وجود هرگونه مشکل یا عدم رضایت، تا ۷ روز پس از دریافت کالا
+                                امکان بازگشت و مرجوعی وجود داره.
+
+                            </p>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</section>
+
+<!--=========================================
+            PRODUCT TABS
+==========================================-->
+
+<section class="product-tabs-section">
+
+    <div class="container">
+
+        <div class="tab-buttons">
+
+            <button class="tab-btn active" data-tab="desc">توضیحات محصول</button>
+
+        </div>
+
+        <div class="tab-content active" id="desc">
+
+            <p id="productFullDescription"></p>
+
+        </div>
+
+    </div>
+
+</section>
+
+<!--=========================================
+            PAYMENT / TRUST BADGES
+==========================================-->
+
+<section class="payment-section">
+
+    <div class="container">
+
+        <div class="payment-box">
+
+            <i class="fa-solid fa-truck-fast"></i>
+
+            <span>ارسال سریع به سراسر کشور</span>
+
+        </div>
+
+        <div class="payment-box">
+
+            <i class="fa-solid fa-rotate-left"></i>
+
+            <span>۷ روز ضمانت بازگشت</span>
+
+        </div>
+
+        <div class="payment-box">
+
+            <i class="fa-solid fa-shield-halved"></i>
+
+            <span>ضمانت اصالت کالا</span>
+
+        </div>
+
+    </div>
+
+</section>
+
+<!--=========================================
+            RELATED PRODUCTS
+==========================================-->
+
+<section class="related-section">
+
+    <div class="container">
+
+        <span class="mini-title">محصولات مشابه</span>
+
+        <h2>شاید این‌ها هم بپسندی</h2>
+
+        <div class="related-grid" id="relatedGrid">
+
+            <!-- Related cards injected by product.js -->
+
+        </div>
+
+    </div>
+
+</section>
+
+<!--=========================================
+                FOOTER
+==========================================-->
+
+<footer>
+
+<div class="container">
+
+<div class="footer-grid">
+
+<div>
+
+<img src="../images//logo2_transparent.png" alt="RevFit" class="footer-logo">
+
+<p>
+
+فروشگاه تخصصی پوشاک موتورسواری
+
+</p>
+
+</div>
+
+<div>
+
+<h3>
+
+لینک ها
+
+</h3>
+
+<ul>
+
+<li><a href="index.html">خانه</a></li>
+
+<li><a href="products.html">محصولات</a></li>
+
+<li><a href="about.html">درباره ما</a></li>
+
+<li><a href="contact.html">تماس</a></li>
+
+</ul>
+
+</div>
+
+<div>
+
+<h3>
+
+پشتیبانی
+
+</h3>
+
+<ul>
+
+<li><a href="terms.html">قوانین</a></li>
+
+<li><a href="privacy.html">حریم خصوصی</a></li>
+
+<li><a href="shipping.html">شرایط ارسال</a></li>
+
+<li><a href="faq.html">سوالات متداول</a></li>
+
+<li><a href="track-order.html">پیگیری سفارش</a></li>
+
+</ul>
+
+</div>
+
+<div>
+
+<h3>
+
+ارتباط با ما
+
+</h3>
+
+<p>
+
+09369538587
+
+</p>
+
+<p>
+
+guardianshop@gmail.com
+
+</p>
+
+<div class="socials">
+
+<a href="#"><i class="fab fa-instagram"></i></a>
+
+<a href="#"><i class="fab fa-telegram"></i></a>
+
+<a href="#"><i class="fab fa-whatsapp"></i></a>
+
+</div>
+
+</div>
+
+</div>
+
+<div class="copyright">
+
+© 2026 تمامی حقوق محفوظ است.
+
+</div>
+
+</div>
+
+</footer>
+
+<!--=========================================
+        BACK TO TOP
+==========================================-->
+
+<button id="topBtn">
+
+<i class="fa-solid fa-arrow-up"></i>
+
+</button>
+
+<!--=========================================
+        TELEGRAM BUTTON
+==========================================-->
+
+<a href="https://t.me/revfit" target="_blank" class="telegram-float">
+
+<i class="fab fa-telegram"></i>
+
+</a>
+
+<!--=========================================
+        SCROLL BAR
+==========================================-->
+
+<div id="progress-bar"></div>
+
+<!--=========================================
+        SEARCH OVERLAY
+==========================================-->
+
+<div class="search-overlay" id="searchOverlay">
+
+    <div class="search-box">
+
+        <button class="search-close" id="searchClose">
+
+            <i class="fa-solid fa-xmark"></i>
+
+        </button>
+
+        <div class="search-input-wrap">
+
+            <i class="fa-solid fa-magnifying-glass"></i>
+
+            <input type="text" id="globalSearchInput" placeholder="جستجوی محصول..." autocomplete="off">
+
+        </div>
+
+        <div class="search-results" id="searchResults"></div>
+
+    </div>
+
+</div>
+
+
+<script src="../js/shop-data.js"></script>
+
+<script src="../js/common.js"></script>
+
+<script src="../js/product.js"></script>
+
+</body>
+
+</html>

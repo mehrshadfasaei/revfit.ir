@@ -1,0 +1,23 @@
+# محیط و رمزها - هیچ‌وقت نباید آپلود بشن
+backend/.env
+.env
+
+# دیتابیس (خودش موقع اجرای بک‌اند از نو ساخته می‌شه)
+backend/shop.db
+backend/security.log
+
+# فایل‌های موقت پایتون
+backend/__pycache__/
+backend/*.pyc
+__pycache__/
+*.pyc
+
+# محیط مجازی پایتون (اگه ساختی)
+backend/venv/
+backend/.venv/
+venv/
+.venv/
+
+# فایل‌های سیستمی
+.DS_Store
+Thumbs.db

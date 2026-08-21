@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>پنل ادمین | RevFit</title>
+
+    <link rel="icon" type="image/png" href="../images//logo1_transparent.png">
+
+
+    <link rel="stylesheet" href="../css/style.css">
+
+    <link rel="stylesheet" href="../css/admin.css">
+
+    <link
+        href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
+
+    <link
+        rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css">
+
+</head>
+
+<body class="admin-body">
+
+<!--=========================================
+                PAGE LOADER
+==========================================-->
+
+<div class="page-loader" id="pageLoader">
+
+    <div class="loader-spinner"></div>
+
+</div>
+
+
+<!--=========================================
+            LOGIN SCREEN
+==========================================-->
+
+<section class="admin-login-screen" id="adminLoginScreen">
+
+    <div class="admin-login-box">
+
+        <div class="admin-login-logo">
+
+            <i class="fa-solid fa-shield-halved"></i>
+
+            <span>RevFit</span>
+
+        </div>
+
+        <h1>ورود ادمین</h1>
+
+        <form id="adminLoginForm">
+
+            <label>
+
+                رمز عبور
+
+                <input type="password" id="adminPassword" placeholder="رمز پنل ادمین رو وارد کن" required>
+
+            </label>
+
+            <button type="submit">ورود</button>
+
+            <p class="admin-login-error" id="adminLoginError"></p>
+
+        </form>
+
+    </div>
+
+</section>
+
+<!--=========================================
+            ADMIN DASHBOARD
+==========================================-->
+
+<div class="admin-dashboard" id="adminDashboard">
+
+    <!-- SIDEBAR -->
+
+    <aside class="admin-sidebar">
+
+        <div class="admin-sidebar-logo">
+
+            <i class="fa-solid fa-shield-halved"></i>
+
+            <span>RevFit</span>
+
+        </div>
+
+        <nav class="admin-nav">
+
+            <a href="#" class="admin-nav-link active" data-tab="dashboard">
+
+                <i class="fa-solid fa-chart-line"></i> داشبورد
+
+            </a>
+
+            <a href="#" class="admin-nav-link" data-tab="products">
+
+                <i class="fa-solid fa-box"></i> محصولات
+
+            </a>
+
+            <a href="#" class="admin-nav-link" data-tab="orders">
+
+                <i class="fa-solid fa-receipt"></i> سفارش‌ها
+
+            </a>
+
+            <a href="#" class="admin-nav-link" data-tab="inventory">
+
+                <i class="fa-solid fa-warehouse"></i> موجودی
+
+            </a>
+
+        </nav>
+
+        <a href="index.html" class="admin-back-link">
+
+            <i class="fa-solid fa-arrow-right"></i> بازگشت به سایت
+
+        </a>
+
+        <button class="admin-logout-btn" id="adminLogoutBtn">
+
+            <i class="fa-solid fa-right-from-bracket"></i> خروج
+
+        </button>
+
+    </aside>
+
+    <!-- MAIN -->
+
+    <main class="admin-main">
+
+        <!-- DASHBOARD TAB -->
+
+        <section class="admin-tab-content active" id="tab-dashboard">
+
+            <div class="admin-page-header">
+
+                <h1>داشبورد</h1>
+
+            </div>
+
+            <div class="admin-dashboard-cards" id="dashboardCards">
+
+                <!-- Injected by admin.js -->
+
+            </div>
+
+            <div class="admin-dashboard-grid">
+
+                <div class="admin-dashboard-panel">
+
+                    <h3><i class="fa-solid fa-fire"></i> پرفروش‌ترین محصولات</h3>
+
+                    <ul class="admin-top-products" id="dashboardTopProducts">
+
+                        <!-- Injected by admin.js -->
+
+                    </ul>
+
+                </div>
+
+                <div class="admin-dashboard-panel">
+
+                    <h3><i class="fa-solid fa-triangle-exclamation"></i> موجودی رو به اتمام</h3>
+
+                    <ul class="admin-low-stock-list" id="dashboardLowStock">
+
+                        <!-- Injected by admin.js -->
+
+                    </ul>
+
+                </div>
+
+            </div>
+
+        </section>
+
+        <!-- PRODUCTS TAB -->
+
+        <section class="admin-tab-content" id="tab-products">
+
+            <div class="admin-page-header">
+
+                <h1>مدیریت محصولات</h1>
+
+                <button class="admin-btn-primary" id="openAddProductBtn">
+
+                    <i class="fa-solid fa-plus"></i> افزودن محصول جدید
+
+                </button>
+
+            </div>
+
+            <div class="admin-table-wrap">
+
+                <table class="admin-table">
+
+                    <thead>
+
+                        <tr>
+
+                            <th>عکس</th>
+
+                            <th>عنوان</th>
+
+                            <th>دسته‌بندی</th>
+
+                            <th>قیمت</th>
+
+                            <th>امتیاز</th>
+
+                            <th>فروش</th>
+
+                            <th>وضعیت</th>
+
+                            <th>عملیات</th>
+
+                        </tr>
+
+                    </thead>
+
+                    <tbody id="adminProductsTableBody">
+
+                        <!-- Injected by admin.js -->
+
+                    </tbody>
+
+                </table>
+
+            </div>
+
+        </section>
+
+        <!-- ORDERS TAB -->
+
+        <section class="admin-tab-content" id="tab-orders">
+
+            <div class="admin-page-header">
+
+                <h1>سفارش‌ها</h1>
+
+            </div>
+
+            <div class="admin-table-wrap">
+
+                <table class="admin-table">
+
+                    <thead>
+
+                        <tr>
+
+                            <th>کد پیگیری</th>
+
+                            <th>مشتری</th>
+
+                            <th>تلفن</th>
+
+                            <th>مبلغ کل</th>
+
+                            <th>وضعیت</th>
+
+                            <th>تاریخ</th>
+
+                            <th>جزئیات</th>
+
+                        </tr>
+
+                    </thead>
+
+                    <tbody id="adminOrdersTableBody">
+
+                        <!-- Injected by admin.js -->
+
+                    </tbody>
+
+                </table>
+
+            </div>
+
+        </section>
+
+        <!-- INVENTORY TAB -->
+
+        <section class="admin-tab-content" id="tab-inventory">
+
+            <div class="admin-page-header">
+
+                <h1>موجودی</h1>
+
+            </div>
+
+            <div class="admin-inventory-summary" id="inventorySummary">
+
+                <!-- Injected by admin.js -->
+
+            </div>
+
+            <div class="admin-table-wrap">
+
+                <table class="admin-table admin-inventory-table">
+
+                    <thead>
+
+                        <tr>
+
+                            <th>محصول</th>
+
+                            <th>S</th>
+
+                            <th>M</th>
+
+                            <th>L</th>
+
+                            <th>XL</th>
+
+                            <th>2XL</th>
+
+                            <th>مجموع</th>
+
+                            <th>عملیات</th>
+
+                        </tr>
+
+                    </thead>
+
+                    <tbody id="adminInventoryTableBody">
+
+                        <!-- Injected by admin.js -->
+
+                    </tbody>
+
+                </table>
+
+            </div>
+
+        </section>
+
+    </main>
+
+</div>
+
+<!--=========================================
+            ADD/EDIT PRODUCT MODAL
+==========================================-->
+
+<div class="admin-modal-overlay" id="productModalOverlay">
+
+    <div class="admin-modal">
+
+        <button class="admin-modal-close" id="productModalClose">
+
+            <i class="fa-solid fa-xmark"></i>
+
+        </button>
+
+        <h2 id="productModalTitle">افزودن محصول جدید</h2>
+
+        <form id="productForm">
+
+            <input type="hidden" id="productId">
+
+            <label>
+
+                عنوان محصول
+
+                <input type="text" id="productTitleInput" required placeholder="مثلاً تی‌شرت مسیر موتورسواری">
+
+            </label>
+
+            <div class="admin-form-row">
+
+                <label>
+
+                    قیمت (تومان)
+
+                    <input type="number" id="productPriceInput" required placeholder="980000">
+
+                </label>
+
+                <label>
+
+                    دسته‌بندی
+
+                    <select id="productCategorySelect">
+
+                        <option value="__new__">+ افزودن دسته‌بندی جدید</option>
+
+                    </select>
+
+                    <input type="text" id="productCategoryNewInput" placeholder="نام دسته‌بندی جدید رو بنویس" style="display:none;margin-top:8px;">
+
+                </label>
+
+            </div>
+
+            <label>
+
+                امتیاز (۰ تا ۵)
+
+                <input type="number" id="productRatingInput" min="0" max="5" step="0.1" value="4.8">
+
+            </label>
+
+            <label>
+
+                توضیحات محصول (اختیاری — اگه خالی بذاری، سایت خودش یه توضیح خودکار می‌سازه)
+
+                <textarea id="productDescriptionInput" rows="4" placeholder="توضیحات کامل محصول رو اینجا بنویس..."></textarea>
+
+            </label>
+
+            <label class="admin-stock-toggle">
+
+                <input type="checkbox" id="productInStockInput" checked>
+
+                <span>محصول موجوده</span>
+
+            </label>
+
+            <p class="admin-form-note">
+
+                <i class="fa-solid fa-circle-info"></i> موجودی هر سایز رو بعد از ذخیره‌ی محصول، از تب «موجودی» مدیریت کن.
+
+            </p>
+
+            <label>
+
+                عکس‌های محصول (اولین عکس، عکس اصلی/کاور می‌شه)
+
+                <input type="file" id="productImageFile" accept="image/*" multiple>
+
+            </label>
+
+            <div class="admin-gallery-preview" id="productGalleryPreview">
+
+                <span class="admin-gallery-empty" id="productGalleryEmptyText">هنوز عکسی انتخاب نشده</span>
+
+            </div>
+
+            <button type="submit" class="admin-btn-primary admin-form-submit">
+
+                ذخیره محصول
+
+            </button>
+
+        </form>
+
+    </div>
+
+</div>
+
+<!--=========================================
+            ORDER DETAIL MODAL
+==========================================-->
+
+<div class="admin-modal-overlay" id="orderDetailOverlay">
+
+    <div class="admin-modal">
+
+        <button class="admin-modal-close" id="orderDetailClose">
+
+            <i class="fa-solid fa-xmark"></i>
+
+        </button>
+
+        <h2>جزئیات سفارش <span id="orderDetailNumber"></span></h2>
+
+        <p class="admin-order-detail-date" id="orderDetailDate"></p>
+
+        <div class="admin-order-detail-section">
+
+            <h4>مشتری</h4>
+
+            <p id="orderDetailCustomer"></p>
+
+        </div>
+
+        <div class="admin-order-detail-section">
+
+            <h4>آدرس ارسال</h4>
+
+            <p id="orderDetailAddress"></p>
+
+        </div>
+
+        <div class="admin-order-detail-section">
+
+            <h4>روش پرداخت</h4>
+
+            <p id="orderDetailPayment"></p>
+
+        </div>
+
+        <div class="admin-order-detail-section" id="orderDetailNotesSection" style="display:none;">
+
+            <h4>توضیحات مشتری</h4>
+
+            <p id="orderDetailNotes"></p>
+
+        </div>
+
+        <div class="admin-order-detail-section">
+
+            <h4>اقلام سفارش</h4>
+
+            <ul class="admin-order-items" id="orderDetailItems"></ul>
+
+        </div>
+
+        <div class="admin-order-detail-total">
+
+            <span>جمع جزء</span><span id="orderDetailSubtotal"></span>
+
+        </div>
+
+        <div class="admin-order-detail-total">
+
+            <span>هزینه ارسال</span><span id="orderDetailShipping"></span>
+
+        </div>
+
+        <div class="admin-order-detail-total admin-order-detail-grand">
+
+            <span>مبلغ کل</span><span id="orderDetailTotal"></span>
+
+        </div>
+
+    </div>
+
+</div>
+
+<script src="../js/admin.js"></script>
+
+</body>
+
+</html>

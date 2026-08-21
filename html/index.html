@@ -1,0 +1,810 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>RevFit</title>
+
+    <link rel="icon" type="image/png" href="../images//logo1_transparent.png">
+
+
+    <link rel="stylesheet" href="../css/style.css">
+
+    <link
+        href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
+
+    <link
+        rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css">
+
+</head>
+
+<body>
+
+<!--=========================================
+                PAGE LOADER
+==========================================-->
+
+<div class="page-loader" id="pageLoader">
+
+    <div class="loader-spinner"></div>
+
+</div>
+
+<!--=========================================
+                MARQUEE BANNER
+==========================================-->
+
+<div class="marquee-banner">
+
+    <div class="marquee-track">
+
+        <div class="marquee-group">
+
+            <span>۱۰٪ تخفیف برای خرید دوم</span>
+
+            <span>ارسال رایگان با خرید دو محصول</span>
+
+            <span>۱۰٪ تخفیف برای خرید دوم</span>
+
+        </div>
+
+        <div class="marquee-group" aria-hidden="true">
+
+            <span>۱۰٪ تخفیف برای خرید دوم</span>
+
+            <span>ارسال رایگان با خرید دو محصول</span>
+
+            <span>۱۰٪ تخفیف برای خرید دوم</span>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<!--=========================================
+                HEADER
+==========================================-->
+
+<header class="with-marquee">
+
+<div class="container">
+
+<nav>
+
+<div class="logo">
+
+<!--
+Logo
+
+Preferred : SVG
+
+Size :
+300 × 80
+
+Path :
+
+images/logo.svg
+-->
+
+<a href="index.html"><img src="../images//logo1_transparent.png" alt="Logo"></a>
+
+</div>
+
+<ul class="nav-links">
+
+<li class="mobile-menu-header">
+
+<button class="mobile-menu-close" id="mobileMenuClose"><i class="fa-solid fa-xmark"></i></button>
+
+</li>
+
+<li class="mobile-menu-search-row" id="mobileMenuSearchTrigger">
+
+<i class="fa-solid fa-magnifying-glass"></i> جستجوی محصول...
+
+</li>
+
+<li><a href="index.html">خانه</a></li>
+
+<li><a href="products.html">محصولات</a></li>
+
+
+<li><a href="about.html">درباره ما</a></li>
+
+<li><a href="contact.html">تماس با ما</a></li>
+
+
+<li class="mobile-menu-link"><a href="cart.html"><i class="fa-solid fa-cart-shopping"></i> سبد خرید <span class="cart-count mobile-cart-count">0</span></a></li>
+
+</ul>
+
+<div class="nav-icons">
+
+<a href="#" class="search-trigger" id="searchTrigger"><i class="fa-solid fa-magnifying-glass"></i></a>
+
+
+<a href="cart.html" class="cart-icon-link"><i class="fa-solid fa-cart-shopping"></i><span class="cart-count" id="cartCount">0</span></a>
+
+</div>
+
+<div class="menu-btn">
+
+<i class="fa-solid fa-bars"></i>
+
+</div>
+
+</nav>
+
+</div>
+
+</header>
+
+<!--=========================================
+                HERO SLIDER
+==========================================-->
+
+<section class="hero-slider">
+
+    <div class="slider-slide active" style="background-image:url('../images//slider2\ \(2\).png');">
+
+        <div class="slider-overlay"></div>
+
+        <div class="slider-content">
+
+            <span class="mini-title">کالکشن جدید</span>
+
+            <h1 class="slogan-en">REV like a TIGER <br>TRAIN like a BEAST</h1>
+
+            <p>طرح‌های اختصاصی، روی بهترین پارچه‌ی روز بازار</p>
+
+            <a href="products.html?search=تی‌شرت" class="btn">مشاهده تی‌شرت‌ها</a>
+
+        </div>
+
+    </div>
+
+    <div class="slider-slide" style="background-image:url('../images//slider2.png');">
+
+        <div class="slider-overlay"></div>
+
+        <div class="slider-content">
+
+            <span class="mini-title">کالکشن جدید</span>
+
+            <h1>تانک‌تاپ‌های موتورسواری</h1>
+
+            <p>سبک، خنک، مناسب روزهای گرم جاده</p>
+
+            <a href="products.html?search=تانک‌تاپ" class="btn">مشاهده تانک‌تاپ‌ها</a>
+
+        </div>
+
+    </div>
+
+    <div class="slider-dots">
+
+        <button class="slider-dot active" data-slide="0" aria-label="اسلاید ۱"></button>
+
+        <button class="slider-dot" data-slide="1" aria-label="اسلاید ۲"></button>
+
+    </div>
+
+</section>
+
+<!--=========================================
+        FEATURED PRODUCTS (داینامیک)
+==========================================-->
+
+<section class="products">
+
+    <div class="container">
+
+        <div class="section-title">
+
+            <span>جدیدترین‌ها</span>
+
+            <h2>محصولات ویژه</h2>
+
+        </div>
+
+        <div class="products-grid" id="featuredProductsGrid">
+
+            <!-- Injected dynamically by home.js: 4 تای آخرین محصول اضافه‌شده -->
+
+        </div>
+
+    </div>
+
+</section>
+
+<!--=========================================
+            FEATURES
+==========================================-->
+
+<section class="features">
+
+<div class="container">
+
+<div class="feature">
+
+<i class="fa-solid fa-truck-fast"></i>
+
+<h3>
+
+ارسال سریع
+
+</h3>
+
+<p>
+
+ارسال به سراسر ایران
+
+</p>
+
+</div>
+
+<div class="feature">
+
+<i class="fa-solid fa-shield-heart"></i>
+
+<h3>
+
+کیفیت تضمینی
+
+</h3>
+
+<p>
+
+متریال درجه یک
+
+</p>
+
+</div>
+
+<div class="feature">
+
+<i class="fa-solid fa-medal"></i>
+
+<h3>
+
+محصول خاص
+
+</h3>
+
+<p>
+
+طراحی منحصر به فرد
+
+</p>
+
+</div>
+
+<div class="feature">
+
+<i class="fa-solid fa-credit-card"></i>
+
+<h3>
+
+پرداخت امن
+
+</h3>
+
+<p>
+
+پرداخت آنلاین
+
+</p>
+
+</div>
+
+</div>
+
+</section>
+
+<!--
+قسمت دوم از اینجا شروع خواهد شد
+-->
+
+
+<!--=========================================
+            BANNER
+==========================================-->
+
+<section class="banner">
+
+    <div class="container">
+
+        <div class="banner-content">
+
+            <div class="banner-image">
+
+                <!--
+
+                Banner
+
+                Size :
+
+                1920 × 800 px
+
+                Path :
+
+                images/banner.jpg
+
+                -->
+
+                <img src="../images//3.webp" alt="">
+
+            </div>
+
+            <div class="banner-text">
+
+                <span>
+
+                    Ride Safe
+
+                </span>
+
+                <h2>
+
+                    استایل تو فقط یه لباس نیست...
+
+                </h2>
+
+                <p>
+
+                    نمادی از آزادی، هویت و احترام به فرهنگ موتورسواری.
+
+                </p>
+
+                <a href="products.html" class="btn">
+
+                    مشاهده مجموعه
+
+                </a>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</section>
+<!--=========================================
+                ABOUT
+==========================================-->
+
+<section class="about">
+
+    <div class="container">
+
+        <div class="about-image">
+
+            <!--
+
+            About Image
+
+            Size :
+
+            700 × 700 px
+
+            Path :
+
+            images/about.jpg
+
+            -->
+
+            <img src="../images//2.webp" alt="">
+
+        </div>
+
+        <div class="about-content">
+
+            <span>
+
+                درباره برند
+
+            </span>
+
+            <h2>
+
+                ما فقط یه محصول برای زیبایی نمیفروشیم.
+
+            </h2>
+
+            <p>
+
+                هر محصول با الهام از فرهنگ موتورسواری طراحی شده است تا علاوه بر زیبایی،
+                نمادی از آزادی، سبک زندگی و تجربه یک سفر متفاوت باشد.
+
+            </p>
+
+            <a href="about.html" class="btn">
+
+                بیشتر بخوانید
+
+            </a>
+
+        </div>
+
+    </div>
+
+</section>
+
+
+<!--=========================================
+                COUNTER
+==========================================-->
+
+<section class="counter">
+
+<div class="container">
+
+<div class="counter-box">
+
+<h2>+1200</h2>
+
+<p>
+
+مشتری راضی
+
+</p>
+
+</div>
+
+<div class="counter-box">
+
+<h2>+3500</h2>
+
+<p>
+
+محصول فروخته شده
+
+</p>
+
+</div>
+
+<div class="counter-box">
+
+<h2>4.9</h2>
+
+<p>
+
+امتیاز کاربران
+
+</p>
+
+</div>
+
+<div class="counter-box">
+
+<h2>98%</h2>
+
+<p>
+
+رضایت مشتری
+
+</p>
+
+</div>
+
+</div>
+
+</section>
+
+<!--=========================================
+            INSTAGRAM
+==========================================-->
+
+<section class="instagram">
+
+    <div class="container">
+
+        <div class="section-title">
+
+            <span>اینستاگرام</span>
+
+            <h2>ما را در اینستاگرام دنبال کنید</h2>
+
+        </div>
+
+        <div class="instagram-grid">
+
+            <!--
+            Instagram Image
+            Size :
+            500 × 500 px
+
+            Path :
+            images/instagram1.jpg
+            -->
+
+            <img src="../images//instagram1.jpg" alt="">
+
+            <!--
+            Path :
+            images/instagram2.jpg
+            -->
+
+            <img src="../images//instagram2.jpg" alt="">
+
+            <!--
+            Path :
+            images/instagram3.jpg
+            -->
+
+            <img src="../images//instagram3.jpg" alt="">
+
+            <!--
+            Path :
+            images/instagram4.jpg
+            -->
+
+            <img src="../images//instagram4.jpg" alt="">
+
+            <!--
+            Path :
+            images/instagram5.jpg
+            -->
+
+            <img src="../images//instagram5.jpg" alt="">
+
+            <!--
+            Path :
+            images/instagram6.jpg
+            -->
+
+            <img src="../images//instagram6.jpg" alt="">
+
+        </div>
+
+    </div>
+
+</section>
+
+
+
+<!--=========================================
+            NEWSLETTER
+==========================================-->
+
+<section class="newsletter">
+
+    <div class="container">
+
+        <h2>
+
+            از جدیدترین محصولات باخبر شوید
+
+        </h2>
+
+        <p>
+
+            ایمیل خود را وارد کنید.
+
+        </p>
+
+        <form id="newsletterForm">
+
+            <input type="email" placeholder="ایمیل شما" required>
+
+            <button type="submit">
+
+                عضویت
+
+            </button>
+
+        </form>
+
+    </div>
+
+</section>
+
+
+
+<!--=========================================
+                FOOTER
+==========================================-->
+
+<footer>
+
+<div class="container">
+
+<div class="footer-grid">
+
+<div>
+
+<!--
+Footer Logo
+
+Size :
+
+300 × 80
+
+Path :
+
+images/logo-white.svg
+
+-->
+
+<img src="../images//logo2_transparent.png" alt="RevFit" class="footer-logo">
+
+<p>
+
+فروشگاه تخصصی پوشاک موتورسواری
+
+</p>
+
+</div>
+
+<div>
+
+<h3>
+
+لینک ها
+
+</h3>
+
+<ul>
+
+<li><a href="index.html">خانه</a></li>
+
+<li><a href="products.html">محصولات</a></li>
+
+<li><a href="about.html">درباره ما</a></li>
+
+<li><a href="contact.html">تماس</a></li>
+
+</ul>
+
+</div>
+
+<div>
+
+<h3>
+
+پشتیبانی
+
+</h3>
+
+<ul>
+
+<li><a href="terms.html">قوانین</a></li>
+
+<li><a href="privacy.html">حریم خصوصی</a></li>
+
+<li><a href="shipping.html">شرایط ارسال</a></li>
+
+<li><a href="faq.html">سوالات متداول</a></li>
+
+<li><a href="track-order.html">پیگیری سفارش</a></li>
+
+</ul>
+
+</div>
+
+<div>
+
+<h3>
+
+ارتباط با ما
+
+</h3>
+
+<p>
+
+09369538587
+
+</p>
+
+<p>
+
+guardianshop@gmail.com
+
+</p>
+
+<div class="socials">
+
+<a href="#"><i class="fab fa-instagram"></i></a>
+
+<a href="#"><i class="fab fa-telegram"></i></a>
+
+<a href="#"><i class="fab fa-whatsapp"></i></a>
+
+</div>
+
+</div>
+
+</div>
+
+<div class="copyright">
+
+© 2026 تمامی حقوق محفوظ است.
+
+</div>
+
+</div>
+
+</footer>
+
+
+
+<!--=========================================
+        BACK TO TOP
+==========================================-->
+
+<button id="topBtn">
+
+<i class="fa-solid fa-arrow-up"></i>
+
+</button>
+
+
+
+<!--=========================================
+        TELEGRAM BUTTON
+==========================================-->
+
+<a href="https://t.me/revfit" target="_blank" class="telegram-float">
+
+<i class="fab fa-telegram"></i>
+
+</a>
+
+
+
+<!--=========================================
+        SCROLL BAR
+==========================================-->
+
+<div id="progress-bar"></div>
+
+<!--=========================================
+        SEARCH OVERLAY
+==========================================-->
+
+<div class="search-overlay" id="searchOverlay">
+
+    <div class="search-box">
+
+        <button class="search-close" id="searchClose">
+
+            <i class="fa-solid fa-xmark"></i>
+
+        </button>
+
+        <div class="search-input-wrap">
+
+            <i class="fa-solid fa-magnifying-glass"></i>
+
+            <input type="text" id="globalSearchInput" placeholder="جستجوی محصول..." autocomplete="off">
+
+        </div>
+
+        <div class="search-results" id="searchResults"></div>
+
+    </div>
+
+</div>
+
+
+
+
+<script src="../js/shop-data.js"></script>
+
+<script src="../js/common.js"></script>
+
+<script src="../js/home.js"></script>
+
+</body>
+
+</html>
