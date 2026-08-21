@@ -553,7 +553,6 @@ background:var(--gold);
 
 }
 
-.favorite-btn,
 .share-btn{
 
 width:58px;
@@ -578,20 +577,11 @@ transition:var(--transition);
 
 }
 
-.favorite-btn:hover,
 .share-btn:hover{
 
 border-color:var(--gold);
 
 color:var(--gold);
-
-}
-
-.favorite-btn.active{
-
-border-color:#e0445b;
-
-color:#e0445b;
 
 }
 
@@ -1169,7 +1159,6 @@ order:1;
 
 }
 
-.favorite-btn,
 .share-btn{
 
 flex:none;

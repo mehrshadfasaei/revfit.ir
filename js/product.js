@@ -3,7 +3,7 @@
         (باید قبل از این فایل لینک بشه):
         getProductById, getProducts, formatPrice,
         renderStars, showToast, addToCart,
-        PLACEHOLDER_RATING, PLACEHOLDER_REVIEWS
+        PLACEHOLDER_RATING
 ====================================*/
 
 let currentProduct   = null;
@@ -578,7 +578,7 @@ const scrollObserver = new IntersectionObserver((entries) => {
 
 });
 
-document.querySelectorAll(".related-card, .review-card, .payment-box").forEach(el => {
+document.querySelectorAll(".related-card, .payment-box").forEach(el => {
 
     scrollObserver.observe(el);
 

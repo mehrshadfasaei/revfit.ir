@@ -52,7 +52,6 @@ class ProductCreate(BaseModel):
     image: str
     description: Optional[str] = None
     in_stock: bool = True
-    out_of_stock_sizes: Optional[str] = None
     rating: float = 4.8
     sales: int = 0
     images: List[str] = []          # آدرس عکس‌های اضافه‌ی گالری (غیر از عکس اصلی)
@@ -66,7 +65,6 @@ class ProductUpdate(BaseModel):
     image: Optional[str] = None
     description: Optional[str] = None
     in_stock: Optional[bool] = None
-    out_of_stock_sizes: Optional[str] = None
     rating: Optional[float] = None
     sales: Optional[int] = None
 

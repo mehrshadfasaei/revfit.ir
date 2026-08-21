@@ -16,11 +16,9 @@
         یا اکستنشن Live Server توی VS Code.
 ====================================*/
 
-const API_BASE_URL = "https://revfit-ir.onrender.com";
+const API_BASE_URL = "http://127.0.0.1:8000";
 
 const PLACEHOLDER_RATING  = 4.8;
-
-const PLACEHOLDER_REVIEWS = 120;
 
 
 // fallback نمادین - فقط وقتی بک‌اند در دسترس نباشه استفاده می‌شه
