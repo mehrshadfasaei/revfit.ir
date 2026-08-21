@@ -35,6 +35,7 @@ from database import Base, engine, get_db
 import models
 import schemas
 import sms
+import email_notify
 
 # متغیرهای محیطی رو از فایل .env (کنار همین main.py) می‌خونه.
 # روی هاست واقعی (لیارا و امثالش)، این متغیرها معمولاً از
@@ -708,6 +709,11 @@ def create_order(request: Request, order: schemas.OrderCreate, db: Session = Dep
         sms.send_order_confirmation_sms(db_order.phone, db_order.order_number)
     except Exception as e:
         print(f"⚠️  ارسال پیامک تأیید سفارش با خطا مواجه شد: {e}")
+
+    try:
+        email_notify.send_new_order_email(db_order)
+    except Exception as e:
+        print(f"⚠️  ارسال ایمیل اطلاع‌رسانی سفارش با خطا مواجه شد: {e}")
 
     return db_order
 
