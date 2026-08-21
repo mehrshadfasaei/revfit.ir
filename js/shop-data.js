@@ -1,19 +1,17 @@
 /*====================================
         SHARED PRODUCT DATA SOURCE
 
-        الان از بک‌اند واقعی (FastAPI + SQLite)
-        می‌خونه. اگه بک‌اند بالا نبود (مثلاً
-        هنوز uvicorn رو اجرا نکردی)، خودکار
-        از همین mockProducts به‌عنوان fallback
-        استفاده می‌کنه تا صفحه خراب نشه.
+        از بک‌اند واقعی (FastAPI + SQLite) می‌خونه.
 
-        نکته‌ی مهم: چون این صفحات با file://
-        باز می‌شن، بعضی مرورگرها fetch از
-        file:// به http://localhost رو محدود
-        می‌کنن. برای اجرای درست، فرانت‌اند رو
-        هم از یه سرور محلی سرو کن، مثلاً:
-        python -m http.server 5500
-        یا اکستنشن Live Server توی VS Code.
+        نکته‌ی مهم درباره‌ی هاست رایگان (Render):
+        سرویس رایگان بعد از چند دقیقه بی‌کاری می‌خوابه؛
+        اولین درخواست بعد از خواب ممکنه ۳۰-۵۰ ثانیه طول
+        بکشه یا حتی یه‌بار fail بشه. برای همین یه‌بار
+        دیگه امتحان می‌کنیم قبل از اینکه تسلیم بشیم -
+        و اگه واقعاً در دسترس نبود، به‌جای نشون‌دادن
+        محصولات ساختگی/قدیمی (که قبلاً می‌کرد و گیج‌کننده
+        بود)، صادقانه یه آرایه‌ی خالی برمی‌گردونیم تا هر
+        صفحه خودش پیام «اتصال برقرار نشد» رو نشون بده.
 ====================================*/
 
 const API_BASE_URL = "http://127.0.0.1:8000";
@@ -21,17 +19,7 @@ const API_BASE_URL = "http://127.0.0.1:8000";
 const PLACEHOLDER_RATING  = 4.8;
 
 
-// fallback نمادین - فقط وقتی بک‌اند در دسترس نباشه استفاده می‌شه
-const mockProducts = [
-
-    { id:1, title:"تی‌شرت مسیر موتورسواری", price:450000, category:"تی‌شرت", image:"../images//product1.png", sales:412, createdAt:"2026-06-20" },
-    { id:2, title:"هودی کلاسیک بایکر",      price:890000, category:"هودی",   image:"../images//product2.png", sales:355, createdAt:"2026-05-11" },
-    { id:3, title:"تی‌شرت طرح جمجمه رایدر", price:480000, category:"تی‌شرت", image:"../images//product3.png", sales:501, createdAt:"2026-07-02" },
-    { id:4, title:"هودی طرح عقاب موتورسوار", price:950000, category:"هودی",  image:"../images//product4.png", sales:289, createdAt:"2026-04-18" }
-
-];
-
-async function getProducts(){
+async function getProducts(retryCount = 0){
 
     try{
 
@@ -43,9 +31,19 @@ async function getProducts(){
 
     }catch(err){
 
-        console.warn("⚠️ اتصال به بک‌اند برقرار نشد؛ از دیتای نمادین استفاده می‌شه.", err);
+        if(retryCount < 2){
 
-        return mockProducts;
+            console.warn(`⚠️ اتصال به بک‌اند برقرار نشد؛ تلاش دوباره... (${retryCount + 1}/2)`);
+
+            await new Promise(resolve => setTimeout(resolve, 4000));
+
+            return getProducts(retryCount + 1);
+
+        }
+
+        console.error("❌ اتصال به بک‌اند بعد از چند تلاش هم برقرار نشد.", err);
+
+        return [];
 
     }
 

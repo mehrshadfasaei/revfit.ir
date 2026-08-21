@@ -1,7 +1,7 @@
 /*====================================
         این فایل به shop-data.js وابسته‌ست
         (باید قبل از این فایل لینک بشه):
-        mockProducts, getProducts, formatPrice,
+        getProducts, formatPrice,
         renderStars, showToast, addToCart,
         PLACEHOLDER_RATING
 ====================================*/
@@ -332,6 +332,18 @@ if(productSortEl){
 (async function init(){
 
     state.all = await getProducts();
+
+    if(state.all.length === 0){
+
+        const emptyStateText = document.querySelector("#emptyState p");
+
+        if(emptyStateText){
+
+            emptyStateText.textContent = "⚠️ در حال حاضر اتصال به فروشگاه برقرار نیست. لطفاً چند لحظه دیگه دوباره امتحان کن.";
+
+        }
+
+    }
 
     const urlParams = new URLSearchParams(window.location.search);
 

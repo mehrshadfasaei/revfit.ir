@@ -88,6 +88,22 @@ async function renderFeaturedProducts(){
 
         const allProducts = await getProducts();
 
+        if(allProducts.length === 0){
+
+            grid.innerHTML = `
+
+                <p style="grid-column:1/-1;text-align:center;padding:40px 20px;color:var(--secondary);">
+
+                    ⚠️ در حال حاضر اتصال به فروشگاه برقرار نیست. لطفاً چند لحظه دیگه صفحه رو رفرش کن.
+
+                </p>
+
+            `;
+
+            return;
+
+        }
+
         const featured = [...allProducts]
 
             .sort((a, b) => b.id - a.id)
