@@ -14,7 +14,7 @@
         صفحه خودش پیام «اتصال برقرار نشد» رو نشون بده.
 ====================================*/
 
-const API_BASE_URL = "http://127.0.0.1:8000";
+const API_BASE_URL = "https://revfit-ir.onrender.com";
 
 const PLACEHOLDER_RATING  = 4.8;
 
@@ -42,6 +42,12 @@ async function getProducts(retryCount = 0){
         }
 
         console.error("❌ اتصال به بک‌اند بعد از چند تلاش هم برقرار نشد.", err);
+
+        if(typeof logClientError === "function"){
+
+            logClientError(`getProducts failed after retries: ${err.message}`, { stack: err.stack });
+
+        }
 
         return [];
 
