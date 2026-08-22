@@ -140,3 +140,20 @@ class ContactMessage(Base):
     message = Column(String, nullable=False)
     is_read = Column(Boolean, default=False)
     created_at = Column(DateTime, default=datetime.utcnow)
+
+
+class LoginAttempt(Base):
+    """قفل تدریجی لاگین ادمین بر اساس IP.
+
+    هر ۳ تلاش ناموفق پشت‌سرهم، یه دوره‌ی قفل فعال می‌شه که هر
+    بار طولانی‌تر از قبلیه (۳ دقیقه، ۵ دقیقه، ۱۰ دقیقه، ...).
+    با یه لاگین موفق، همه‌چیز از نو صفر می‌شه."""
+
+    __tablename__ = "login_attempts"
+
+    id = Column(Integer, primary_key=True, index=True)
+    ip_address = Column(String, nullable=False, unique=True, index=True)
+    failed_count = Column(Integer, default=0)
+    lockout_count = Column(Integer, default=0)     # چندمین بار قفل شده (برای تعیین مدت زمان بعدی)
+    locked_until = Column(DateTime, nullable=True)
+    updated_at = Column(DateTime, default=datetime.utcnow)
