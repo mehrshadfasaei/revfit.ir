@@ -1,42 +1,34 @@
 """
 ارسال ایمیل به صاحب فروشگاه هر بار که سفارش جدیدی ثبت می‌شه.
 
-با Gmail (بدون نیاز به سرویس پولی جدا) کار می‌کنه. برای فعال‌سازی:
+با Brevo (قبلاً Sendinblue) کار می‌کنه - یه سرویس ایمیل ترنزکشنال
+رایگان (تا ۳۰۰ ایمیل در روز) که از طریق HTTPS کار می‌کنه، نه SMTP.
 
-1. یه ایمیل جیمیل که خودت بهش دسترسی داری آماده کن (می‌تونه همون
-   ایمیل شخصیت باشه یا یه ایمیل مخصوص فروشگاه).
-2. برو به: https://myaccount.google.com/apppasswords
-   (باید اول "تأیید دومرحله‌ای" یا 2-Step Verification روی
-   اکانت جیمیلت روشن باشه، وگرنه این صفحه در دسترس نیست.)
-3. یه "App Password" جدید بساز (اسمش رو مثلاً "RevFit" بذار).
-   یه رمز ۱۶ کاراکتری بهت می‌ده - این با رمز عادی جیمیلت فرق داره.
-4. توی فایل .env این‌هارو اضافه کن:
+⚠️ چرا SMTP معمولی (مثل جیمیل) کار نمی‌کنه: هاست‌های رایگان
+مثل Render، اتصال خروجی SMTP (پورت ۵۸۷) رو کامل مسدود می‌کنن
+(برای جلوگیری از سوءاستفاده/اسپم) - این محدودیت خودِ هاسته، نه
+تنظیمات ما. Brevo چون از طریق یه API عادی HTTPS کار می‌کنه (مثل
+همون کاوه‌نگار برای پیامک)، این مشکل رو نداره.
 
-   SMTP_EMAIL=همون-ایمیل-جیمیلت@gmail.com
-   SMTP_PASSWORD=همون-رمز-16-کاراکتری-App-Password
+برای فعال‌سازی:
+1. برو brevo.com و ثبت‌نام کن (رایگانه)
+2. توی پنل، برو: Settings (⚙️ بالا راست) → SMTP & API → API Keys
+3. یه API Key جدید بساز (دکمه‌ی "Generate a new API key")
+4. توی فایل .env این‌و اضافه کن:
+   BREVO_API_KEY=همون-کلید-تو
    OWNER_EMAIL=ایمیلی-که-میخوای-اطلاعیه-بیاد@gmail.com
-
-   (OWNER_EMAIL می‌تونه همون SMTP_EMAIL باشه یا یه ایمیل دیگه -
-   مثلاً می‌تونی از یه ایمیل مخصوص فروشگاه بفرستی ولی خودت با
-   جیمیل شخصیت دریافت کنی.)
+   SENDER_EMAIL=یه-ایمیل-فرستنده (می‌تونه همون OWNER_EMAIL باشه)
 
 اگه این متغیرها ست نشده باشن، ایمیل اصلاً ارسال نمی‌شه ولی سایت
-کرش نمی‌کنه - فقط توی لاگ بک‌اند یه هشدار می‌بینی. یعنی امن‌تره
-تا وقتی ایمیل رو راه‌اندازی نکردی، بقیه‌ی سایت (ثبت سفارش) بدون
-مشکل کار کنه.
+کرش نمی‌کنه - فقط توی لاگ بک‌اند یه هشدار می‌بینی.
 """
 
 import os
-import smtplib
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
+import requests
 
-SMTP_EMAIL = os.environ.get("SMTP_EMAIL")
-SMTP_PASSWORD = os.environ.get("SMTP_PASSWORD")
+BREVO_API_KEY = os.environ.get("BREVO_API_KEY")
 OWNER_EMAIL = os.environ.get("OWNER_EMAIL")
-
-SMTP_HOST = "smtp.gmail.com"
-SMTP_PORT = 587
+SENDER_EMAIL = os.environ.get("SENDER_EMAIL") or OWNER_EMAIL
 
 
 def send_new_order_email(order) -> bool:
@@ -44,13 +36,13 @@ def send_new_order_email(order) -> bool:
     ایمیل اطلاع‌رسانی سفارش جدید رو برای صاحب فروشگاه می‌فرسته.
     `order` همون آبجکت مدل Order ـه (بعد از ذخیره توی دیتابیس).
 
-    اگه متغیرهای SMTP ست نشده باشن یا ارسال fail بشه، فقط False
+    اگه متغیرهای لازم ست نشده باشن یا ارسال fail بشه، فقط False
     برمی‌گردونه و لاگ می‌کنه - خطا throw نمی‌کنه تا ثبت سفارش رو
     خراب نکنه.
     """
 
-    if not (SMTP_EMAIL and SMTP_PASSWORD and OWNER_EMAIL):
-        print("⚠️  متغیرهای SMTP_EMAIL / SMTP_PASSWORD / OWNER_EMAIL ست نشدن؛ ایمیل ارسال نشد.")
+    if not (BREVO_API_KEY and OWNER_EMAIL and SENDER_EMAIL):
+        print("⚠️  متغیرهای BREVO_API_KEY / OWNER_EMAIL / SENDER_EMAIL ست نشدن؛ ایمیل ارسال نشد.")
         return False
 
     items_html = "".join(
@@ -78,19 +70,30 @@ def send_new_order_email(order) -> bool:
     </div>
     """
 
-    message = MIMEMultipart("alternative")
-    message["Subject"] = f"🛍️ سفارش جدید: {order.order_number}"
-    message["From"] = SMTP_EMAIL
-    message["To"] = OWNER_EMAIL
-    message.attach(MIMEText(html_body, "html", "utf-8"))
-
     try:
-        with smtplib.SMTP(SMTP_HOST, SMTP_PORT, timeout=10) as server:
-            server.starttls()
-            server.login(SMTP_EMAIL, SMTP_PASSWORD)
-            server.sendmail(SMTP_EMAIL, OWNER_EMAIL, message.as_string())
-        return True
+        response = requests.post(
+            "https://api.brevo.com/v3/smtp/email",
+            headers={
+                "api-key": BREVO_API_KEY,
+                "Content-Type": "application/json",
+                "Accept": "application/json",
+            },
+            json={
+                "sender": {"email": SENDER_EMAIL, "name": "RevFit"},
+                "to": [{"email": OWNER_EMAIL}],
+                "subject": f"🛍️ سفارش جدید: {order.order_number}",
+                "htmlContent": html_body,
+            },
+            timeout=10,
+        )
+
+        if response.status_code in (200, 201):
+            return True
+
+        print(f"⚠️  خطا در ارسال ایمیل: {response.status_code} - {response.text}")
+        return False
 
     except Exception as e:
         print(f"⚠️  ارسال ایمیل سفارش با خطا مواجه شد: {e}")
         return False
+

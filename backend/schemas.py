@@ -153,3 +153,24 @@ class ErrorLogOut(BaseModel):
 
     class Config:
         orm_mode = True
+
+
+class ContactMessageCreate(BaseModel):
+    name: str
+    contactInfo: str
+    subject: Optional[str] = None
+    message: str
+    website: Optional[str] = None    # honeypot ضدربات
+
+
+class ContactMessageOut(BaseModel):
+    id: int
+    name: str
+    contact_info: str
+    subject: Optional[str] = None
+    message: str
+    is_read: bool
+    created_at: datetime
+
+    class Config:
+        orm_mode = True

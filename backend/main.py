@@ -535,6 +535,54 @@ def clear_error_logs(db: Session = Depends(get_db)):
     return {"cleared": True}
 
 
+# ---------------------------------------------------------
+#   CONTACT FORM (پیام‌های صفحه‌ی «تماس با ما»)
+# ---------------------------------------------------------
+
+@app.post("/api/contact")
+@limiter.limit("5/minute")
+def submit_contact_message(request: Request, payload: schemas.ContactMessageCreate, db: Session = Depends(get_db)):
+    if payload.website:
+        # Honeypot ضدربات - این فیلد باید همیشه خالی باشه
+        security_logger.info(f"پیام تماس مشکوک به ربات از IP {request.client.host}")
+        raise HTTPException(status_code=400, detail="ارسال پیام با مشکل مواجه شد")
+
+    db_message = models.ContactMessage(
+        name=sanitize_text(payload.name)[:200],
+        contact_info=sanitize_text(payload.contactInfo)[:200],
+        subject=sanitize_text(payload.subject)[:300] if payload.subject else None,
+        message=sanitize_text(payload.message)[:3000],
+    )
+    db.add(db_message)
+    db.commit()
+    return {"sent": True}
+
+
+@app.get("/api/admin/contact-messages", response_model=list[schemas.ContactMessageOut], dependencies=[Depends(verify_admin)])
+def list_contact_messages(db: Session = Depends(get_db)):
+    return db.query(models.ContactMessage).order_by(models.ContactMessage.created_at.desc()).all()
+
+
+@app.put("/api/admin/contact-messages/{message_id}/read", dependencies=[Depends(verify_admin)])
+def mark_contact_message_read(message_id: int, db: Session = Depends(get_db)):
+    db_message = db.query(models.ContactMessage).filter(models.ContactMessage.id == message_id).first()
+    if not db_message:
+        raise HTTPException(status_code=404, detail="پیام پیدا نشد")
+    db_message.is_read = True
+    db.commit()
+    return {"updated": True}
+
+
+@app.delete("/api/admin/contact-messages/{message_id}", dependencies=[Depends(verify_admin)])
+def delete_contact_message(message_id: int, db: Session = Depends(get_db)):
+    db_message = db.query(models.ContactMessage).filter(models.ContactMessage.id == message_id).first()
+    if not db_message:
+        raise HTTPException(status_code=404, detail="پیام پیدا نشد")
+    db.delete(db_message)
+    db.commit()
+    return {"deleted": True}
+
+
 ALLOWED_STATUSES = ["pending", "paid", "shipped", "delivered"]
 
 

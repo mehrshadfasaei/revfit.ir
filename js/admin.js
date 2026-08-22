@@ -62,6 +62,8 @@ function showDashboard(){
 
     loadOrders();
 
+    loadContactMessages();
+
 }
 
 
@@ -276,6 +278,8 @@ document.querySelectorAll(".admin-nav-link").forEach(link => {
         document.getElementById(`tab-${link.dataset.tab}`).classList.add("active");
 
         if(link.dataset.tab === "error-logs") loadErrorLogs();
+
+        if(link.dataset.tab === "messages") loadContactMessages();
 
     });
 
@@ -663,6 +667,189 @@ if(clearErrorLogsBtn){
     });
 
 }
+
+
+/*====================================
+        CONTACT MESSAGES
+====================================*/
+
+let currentMessages = [];
+
+async function loadContactMessages(){
+
+    const listEl = document.getElementById("adminMessagesList");
+
+    const badgeEl = document.getElementById("unreadMessagesBadge");
+
+    if(!listEl) return;
+
+    listEl.innerHTML = `<p class="admin-empty-row-inline">در حال بارگذاری...</p>`;
+
+    try{
+
+        const res = await fetch(`${API_BASE_URL}/api/admin/contact-messages`, {
+
+            headers: adminHeaders()
+
+        });
+
+        if(!res.ok) throw new Error("خطا در دریافت پیام‌ها");
+
+        currentMessages = await res.json();
+
+        const unreadCount = currentMessages.filter(m => !m.is_read).length;
+
+        if(badgeEl){
+
+            if(unreadCount > 0){
+
+                badgeEl.textContent = unreadCount;
+
+                badgeEl.style.display = "inline-flex";
+
+            }else{
+
+                badgeEl.style.display = "none";
+
+            }
+
+        }
+
+        if(currentMessages.length === 0){
+
+            listEl.innerHTML = `<p class="admin-empty-row-inline">هنوز پیامی از مشتری‌ها نیومده.</p>`;
+
+            return;
+
+        }
+
+        listEl.innerHTML = currentMessages.map(msg => `
+
+            <div class="admin-message-card ${msg.is_read ? "" : "unread"}" data-id="${msg.id}">
+
+                <div class="admin-message-card-top">
+
+                    <span class="admin-message-sender">${msg.name}${!msg.is_read ? '<span class="admin-message-dot"></span>' : ""}</span>
+
+                    <span class="admin-message-date">${formatTehranDateTime(msg.created_at)}</span>
+
+                </div>
+
+                <div class="admin-message-subject">${msg.subject || "(بدون موضوع)"}</div>
+
+                <div class="admin-message-preview">${msg.message}</div>
+
+            </div>
+
+        `).join("");
+
+    }catch(err){
+
+        console.error(err);
+
+        listEl.innerHTML = `<p class="admin-empty-row-inline">اتصال به بک‌اند برقرار نشد.</p>`;
+
+    }
+
+}
+
+const messageModalOverlay = document.getElementById("messageModalOverlay");
+
+let currentOpenMessageId = null;
+
+document.getElementById("adminMessagesList")?.addEventListener("click", async (e) => {
+
+    const card = e.target.closest(".admin-message-card");
+
+    if(!card) return;
+
+    const id = Number(card.dataset.id);
+
+    const msg = currentMessages.find(m => m.id === id);
+
+    if(!msg) return;
+
+    currentOpenMessageId = id;
+
+    document.getElementById("messageDetailDate").textContent = `دریافت‌شده در ${formatTehranDateTime(msg.created_at)}`;
+
+    document.getElementById("messageDetailSender").textContent = `${msg.name} — ${msg.contact_info}`;
+
+    document.getElementById("messageDetailSubject").textContent = msg.subject || "(بدون موضوع)";
+
+    document.getElementById("messageDetailBody").textContent = msg.message;
+
+    messageModalOverlay.classList.add("show");
+
+    if(!msg.is_read){
+
+        try{
+
+            await fetch(`${API_BASE_URL}/api/admin/contact-messages/${id}/read`, {
+
+                method: "PUT",
+
+                headers: adminHeaders()
+
+            });
+
+            msg.is_read = true;
+
+            loadContactMessages();
+
+        }catch(err){
+
+            console.error(err);
+
+        }
+
+    }
+
+});
+
+document.getElementById("messageModalClose")?.addEventListener("click", () => {
+
+    messageModalOverlay.classList.remove("show");
+
+});
+
+messageModalOverlay?.addEventListener("click", (e) => {
+
+    if(e.target === messageModalOverlay) messageModalOverlay.classList.remove("show");
+
+});
+
+document.getElementById("deleteMessageBtn")?.addEventListener("click", async () => {
+
+    if(!currentOpenMessageId) return;
+
+    if(!confirm("مطمئنی می‌خوای این پیام رو حذف کنی؟")) return;
+
+    try{
+
+        const res = await fetch(`${API_BASE_URL}/api/admin/contact-messages/${currentOpenMessageId}`, {
+
+            method: "DELETE",
+
+            headers: adminHeaders()
+
+        });
+
+        if(!res.ok) throw new Error("حذف با مشکل مواجه شد");
+
+        messageModalOverlay.classList.remove("show");
+
+        loadContactMessages();
+
+    }catch(err){
+
+        console.error(err);
+
+        alert("حذف پیام با مشکل مواجه شد.");
+
+    }
+
+});
 
 
 document.getElementById("adminProductsTableBody").addEventListener("click", (e) => {
