@@ -71,11 +71,17 @@ def get_real_ip(request: Request) -> str:
     پروکسی رد می‌کنه؛ یعنی request.client.host ممکنه IP خودِ
     پروکسی رو بده، نه IP واقعی بازدیدکننده - که برای همه یکسانه
     و کل سیستم Rate Limit/قفل لاگین رو بی‌اثر می‌کنه. به‌جاش از
-    هدر X-Forwarded-For (که خودِ پروکسی ست می‌کنه) استفاده می‌کنیم."""
+    هدر X-Forwarded-For استفاده می‌کنیم.
+
+    نکته‌ی مهم امنیتی: این هدر می‌تونه چندتا IP با کاما جدا داشته
+    باشه. مقدار اول همیشه چیزیه که خودِ کلاینت (مرورگر/اسکریپت)
+    می‌تونه دستی بفرسته - یعنی قابل جعله! پروکسی مطمئن (Render)
+    IP واقعی رو به‌عنوان آخرین مقدار زنجیره اضافه می‌کنه، پس باید
+    همیشه آخرین مقدار رو بخونیم، نه اولی."""
 
     forwarded = request.headers.get("x-forwarded-for")
     if forwarded:
-        return forwarded.split(",")[0].strip()
+        return forwarded.split(",")[-1].strip()
     return request.client.host if request.client else "unknown"
 
 
@@ -782,10 +788,18 @@ def create_order(request: Request, order: schemas.OrderCreate, db: Session = Dep
         if not item["size"]:
             continue
 
+        # قفل سطح ردیف - تا وقتی این تراکنش تموم نشده، هیچ سفارش
+        # دیگه‌ای نمی‌تونه همزمان همین ردیف موجودی رو بخونه/تغییر
+        # بده. بدون این قفل، دو نفر می‌تونستن همزمان آخرین واحد
+        # موجودی یه سایز رو سفارش بدن و هردو موفق بشن (فروش بیش
+        # از موجودی واقعی) - این ریسک روی SQLite کم‌تر بود چون خودش
+        # قفل کلی سطح فایل داشت، ولی روی PostgreSQL واقعی که چندتا
+        # درخواست واقعاً همزمان اجرا می‌شن، این قفل ضروریه.
         db_stock = db.query(models.ProductStock).filter(
+
             models.ProductStock.product_id == item["id"],
             models.ProductStock.size == item["size"]
-        ).first()
+        ).with_for_update().first()
 
         available = db_stock.quantity if db_stock else 0
 
