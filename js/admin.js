@@ -702,6 +702,43 @@ document.getElementById("adminInventoryTableBody").addEventListener("click", asy
         ERROR LOGS TAB
 ====================================*/
 
+function escapeHtml(str){
+
+    const div = document.createElement("div");
+
+    div.textContent = str;
+
+    return div.innerHTML;
+
+}
+
+function renderSafePageUrlLink(pageUrl){
+
+    if(!pageUrl) return "-";
+
+    try{
+
+        const parsed = new URL(pageUrl);
+
+        // فقط لینک‌های واقعی http/https رو قابل‌کلیک می‌کنیم - هر
+        // چیز دیگه‌ای (مثلاً javascript:...) فقط به‌عنوان متن ساده
+        // نشون داده می‌شه، نه یه لینک قابل‌کلیک
+        if(parsed.protocol !== "http:" && parsed.protocol !== "https:"){
+
+            return escapeHtml(pageUrl);
+
+        }
+
+        return `<a href="${escapeHtml(parsed.href)}" target="_blank" rel="noopener noreferrer">${escapeHtml(parsed.pathname)}</a>`;
+
+    }catch{
+
+        return escapeHtml(pageUrl);
+
+    }
+
+}
+
 async function loadErrorLogs(){
 
     const tbody = document.getElementById("adminErrorLogsTableBody");
@@ -738,7 +775,7 @@ async function loadErrorLogs(){
 
                 <td>${log.message}</td>
 
-                <td>${log.page_url ? `<a href="${log.page_url}" target="_blank">${new URL(log.page_url).pathname}</a>` : "-"}</td>
+                <td>${renderSafePageUrlLink(log.page_url)}</td>
 
                 <td style="font-size:11px;color:var(--secondary);">${log.user_agent || "-"}</td>
 

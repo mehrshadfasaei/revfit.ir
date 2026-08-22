@@ -752,30 +752,52 @@ def create_order(request: Request, order: schemas.OrderCreate, db: Session = Dep
     if not order.items:
         raise HTTPException(status_code=400, detail="سبد خرید خالیه")
 
+    # قیمت و عنوان هر قلم رو از خودِ دیتابیس می‌گیریم، نه از چیزی
+    # که مرورگر مشتری فرستاده - وگرنه یه نفر می‌تونست با دستکاری
+    # درخواست، قیمت دلخواه خودش رو جای قیمت واقعی محصول بفرسته.
+    verified_items = []
+
+    for item in order.items:
+        db_product = db.query(models.Product).filter(models.Product.id == item.id).first()
+
+        if not db_product:
+            raise HTTPException(status_code=400, detail=f"محصولی با شناسه‌ی {item.id} پیدا نشد")
+
+        if item.quantity <= 0:
+            raise HTTPException(status_code=400, detail="تعداد سفارش باید حداقل ۱ باشه")
+
+        verified_items.append({
+            "id": db_product.id,
+            "title": db_product.title,          # عنوان واقعی از دیتابیس، نه ورودی کاربر
+            "price": db_product.price,           # قیمت واقعی از دیتابیس، نه ورودی کاربر
+            "size": item.size,
+            "quantity": item.quantity,
+        })
+
     # قبل از هرکاری، مطمئن می‌شیم موجودی همه‌ی اقلام کافیه -
     # وگرنه کل سفارش رد می‌شه (نه اینکه نصفه‌نیمه ثبت بشه)
     stock_rows_to_update = []
 
-    for item in order.items:
-        if not item.size:
+    for item in verified_items:
+        if not item["size"]:
             continue
 
         db_stock = db.query(models.ProductStock).filter(
-            models.ProductStock.product_id == item.id,
-            models.ProductStock.size == item.size
+            models.ProductStock.product_id == item["id"],
+            models.ProductStock.size == item["size"]
         ).first()
 
         available = db_stock.quantity if db_stock else 0
 
-        if available < item.quantity:
+        if available < item["quantity"]:
             raise HTTPException(
                 status_code=400,
-                detail=f"موجودی «{item.title}» سایز {item.size} کافی نیست (فقط {available} عدد موجوده)"
+                detail=f"موجودی «{item['title']}» سایز {item['size']} کافی نیست (فقط {available} عدد موجوده)"
             )
 
-        stock_rows_to_update.append((db_stock, item.quantity))
+        stock_rows_to_update.append((db_stock, item["quantity"]))
 
-    subtotal = sum(item.price * item.quantity for item in order.items)
+    subtotal = sum(item["price"] * item["quantity"] for item in verified_items)
 
     estimated_shipping = get_shipping_cost(order.postalCode)
 
@@ -807,19 +829,19 @@ def create_order(request: Request, order: schemas.OrderCreate, db: Session = Dep
     db.add(db_order)
     db.flush()  # تا db_order.id پر بشه
 
-    for item in order.items:
+    for item in verified_items:
         db.add(models.OrderItem(
             order_id=db_order.id,
-            product_id=item.id,
-            title=sanitize_text(item.title),
-            price=item.price,
-            size=sanitize_text(item.size) if item.size else None,
-            quantity=item.quantity,
+            product_id=item["id"],
+            title=sanitize_text(item["title"]),
+            price=item["price"],
+            size=sanitize_text(item["size"]) if item["size"] else None,
+            quantity=item["quantity"],
         ))
 
-        db_product_for_sales = db.query(models.Product).filter(models.Product.id == item.id).first()
+        db_product_for_sales = db.query(models.Product).filter(models.Product.id == item["id"]).first()
         if db_product_for_sales:
-            db_product_for_sales.sales = (db_product_for_sales.sales or 0) + item.quantity
+            db_product_for_sales.sales = (db_product_for_sales.sales or 0) + item["quantity"]
 
     # موجودی رو کم کن (فقط بعد از اینکه مطمئن شدیم همه‌چیز کافیه)
     affected_product_ids = set()
