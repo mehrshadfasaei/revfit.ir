@@ -43,6 +43,39 @@ function adminHeaders(extra = {}){
 
 
 /*====================================
+        FETCH WITH RETRY
+
+        بک‌اند رایگان Render بعد از چند دقیقه بی‌کاری می‌خوابه؛
+        اولین درخواست بعد از خواب ممکنه fail بشه (ERR_FAILED)
+        تا سرویس کامل بیدار بشه. این تابع اگه fetch در سطح
+        شبکه fail بشه (نه یه پاسخ خطا مثل 401/404، بلکه واقعاً
+        قطع اتصال)، یه‌بار دیگه با کمی فاصله امتحان می‌کنه.
+====================================*/
+
+async function fetchWithRetry(url, options = {}, retries = 2){
+
+    try{
+
+        return await fetch(url, options);
+
+    }catch(err){
+
+        if(retries > 0){
+
+            await new Promise(resolve => setTimeout(resolve, 4000));
+
+            return fetchWithRetry(url, options, retries - 1);
+
+        }
+
+        throw err;
+
+    }
+
+}
+
+
+/*====================================
         LOGIN / LOGOUT
 ====================================*/
 
@@ -83,7 +116,7 @@ async function loadDashboardStats(){
 
     try{
 
-        const res = await fetch(`${API_BASE_URL}/api/admin/stats`, {
+        const res = await fetchWithRetry(`${API_BASE_URL}/api/admin/stats`, {
 
             headers: adminHeaders()
 
@@ -216,7 +249,7 @@ document.getElementById("adminLoginForm").addEventListener("submit", async (e) =
 
     try{
 
-        const res = await fetch(`${API_BASE_URL}/api/admin/login`, {
+        const res = await fetchWithRetry(`${API_BASE_URL}/api/admin/login`, {
 
             method: "POST",
 
@@ -296,7 +329,7 @@ async function loadProducts(){
 
     try{
 
-        const res = await fetch(`${API_BASE_URL}/api/products`);
+        const res = await fetchWithRetry(`${API_BASE_URL}/api/products`);
 
         allProducts = await res.json();
 
@@ -537,7 +570,7 @@ document.getElementById("adminInventoryTableBody").addEventListener("click", asy
 
     try{
 
-        const res = await fetch(`${API_BASE_URL}/api/products/${productId}/stock`, {
+        const res = await fetchWithRetry(`${API_BASE_URL}/api/products/${productId}/stock`, {
 
             method: "PUT",
 
@@ -590,7 +623,7 @@ async function loadErrorLogs(){
 
     try{
 
-        const res = await fetch(`${API_BASE_URL}/api/admin/error-logs`, {
+        const res = await fetchWithRetry(`${API_BASE_URL}/api/admin/error-logs`, {
 
             headers: adminHeaders()
 
@@ -644,7 +677,7 @@ if(clearErrorLogsBtn){
 
         try{
 
-            const res = await fetch(`${API_BASE_URL}/api/admin/error-logs`, {
+            const res = await fetchWithRetry(`${API_BASE_URL}/api/admin/error-logs`, {
 
                 method: "DELETE",
 
@@ -687,7 +720,7 @@ async function loadContactMessages(){
 
     try{
 
-        const res = await fetch(`${API_BASE_URL}/api/admin/contact-messages`, {
+        const res = await fetchWithRetry(`${API_BASE_URL}/api/admin/contact-messages`, {
 
             headers: adminHeaders()
 
@@ -785,7 +818,7 @@ document.getElementById("adminMessagesList")?.addEventListener("click", async (e
 
         try{
 
-            await fetch(`${API_BASE_URL}/api/admin/contact-messages/${id}/read`, {
+            await fetchWithRetry(`${API_BASE_URL}/api/admin/contact-messages/${id}/read`, {
 
                 method: "PUT",
 
@@ -827,7 +860,7 @@ document.getElementById("deleteMessageBtn")?.addEventListener("click", async () 
 
     try{
 
-        const res = await fetch(`${API_BASE_URL}/api/admin/contact-messages/${currentOpenMessageId}`, {
+        const res = await fetchWithRetry(`${API_BASE_URL}/api/admin/contact-messages/${currentOpenMessageId}`, {
 
             method: "DELETE",
 
@@ -870,7 +903,7 @@ async function deleteProduct(id){
 
     try{
 
-        const res = await fetch(`${API_BASE_URL}/api/products/${id}`, {
+        const res = await fetchWithRetry(`${API_BASE_URL}/api/products/${id}`, {
 
             method: "DELETE",
 
@@ -1092,7 +1125,7 @@ async function uploadImageFile(file){
 
     formData.append("file", file);
 
-    const res = await fetch(`${API_BASE_URL}/api/admin/upload-image`, {
+    const res = await fetchWithRetry(`${API_BASE_URL}/api/admin/upload-image`, {
 
         method: "POST",
 
@@ -1125,7 +1158,7 @@ document.getElementById("productImageFile").addEventListener("change", async (e)
 
                 const path = await uploadImageFile(file);
 
-                const res = await fetch(`${API_BASE_URL}/api/products/${currentEditingProductId}/images`, {
+                const res = await fetchWithRetry(`${API_BASE_URL}/api/products/${currentEditingProductId}/images`, {
 
                     method: "POST",
 
@@ -1191,7 +1224,7 @@ document.getElementById("productGalleryPreview").addEventListener("click", async
 
         try{
 
-            const updateRes = await fetch(`${API_BASE_URL}/api/products/${currentEditingProductId}`, {
+            const updateRes = await fetchWithRetry(`${API_BASE_URL}/api/products/${currentEditingProductId}`, {
 
                 method: "PUT",
 
@@ -1203,7 +1236,7 @@ document.getElementById("productGalleryPreview").addEventListener("click", async
 
             if(!updateRes.ok) throw new Error("تغییر عکس اصلی با مشکل مواجه شد");
 
-            const deleteRes = await fetch(`${API_BASE_URL}/api/products/${currentEditingProductId}/images/${nextImage.id}`, {
+            const deleteRes = await fetchWithRetry(`${API_BASE_URL}/api/products/${currentEditingProductId}/images/${nextImage.id}`, {
 
                 method: "DELETE",
 
@@ -1240,7 +1273,7 @@ document.getElementById("productGalleryPreview").addEventListener("click", async
 
         try{
 
-            const res = await fetch(`${API_BASE_URL}/api/products/${currentEditingProductId}/images/${imageId}`, {
+            const res = await fetchWithRetry(`${API_BASE_URL}/api/products/${currentEditingProductId}/images/${imageId}`, {
 
                 method: "DELETE",
 
@@ -1332,7 +1365,7 @@ productForm.addEventListener("submit", async (e) => {
         if(id){
 
             // ویرایش - عکس‌ها از قبل (بلافاصله موقع انتخاب) مدیریت شدن. موجودی هم دیگه اینجا نیست، توی تب موجودیه
-            const res = await fetch(`${API_BASE_URL}/api/products/${id}`, {
+            const res = await fetchWithRetry(`${API_BASE_URL}/api/products/${id}`, {
 
                 method: "PUT",
 
@@ -1375,7 +1408,7 @@ productForm.addEventListener("submit", async (e) => {
 
             payload.sales = 0;
 
-            const res = await fetch(`${API_BASE_URL}/api/products`, {
+            const res = await fetchWithRetry(`${API_BASE_URL}/api/products`, {
 
                 method: "POST",
 
@@ -1483,7 +1516,7 @@ async function loadOrders(){
 
     try{
 
-        const res = await fetch(`${API_BASE_URL}/api/admin/orders`, {
+        const res = await fetchWithRetry(`${API_BASE_URL}/api/admin/orders`, {
 
             headers: adminHeaders()
 
@@ -1674,7 +1707,7 @@ document.getElementById("adminOrdersTableBody").addEventListener("change", async
 
     try{
 
-        const res = await fetch(`${API_BASE_URL}/api/admin/orders/${orderNumber}/status`, {
+        const res = await fetchWithRetry(`${API_BASE_URL}/api/admin/orders/${orderNumber}/status`, {
 
             method: "PUT",
 
