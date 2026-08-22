@@ -1,26 +1,35 @@
 """
 اتصال به دیتابیس.
 
-فعلاً SQLite (یه فایل ساده به اسم shop.db کنار همین کدها).
-اگه بعداً خواستی به MySQL/PostgreSQL مهاجرت کنی، فقط کافیه
-DATABASE_URL رو عوض کنی؛ چون از SQLAlchemy استفاده می‌کنیم
-بقیه‌ی کد (models.py, main.py) دست نخورده کار می‌کنه.
+اگه متغیر محیطی DATABASE_URL ست شده باشه (مثلاً یه دیتابیس
+PostgreSQL واقعی روی Render)، از همون استفاده می‌کنیم - این
+دیتابیس مستقل از دیسک موقت سرویسه، یعنی با هر دیپلوی جدید
+پاک نمی‌شه.
 
-مثال برای PostgreSQL بعداً:
-DATABASE_URL = "postgresql://user:password@localhost/shop_db"
-
-مثال برای MySQL بعداً:
-DATABASE_URL = "mysql+pymysql://user:password@localhost/shop_db"
+اگه ست نشده باشه (مثلاً موقع اجرای لوکال روی کامپیوتر خودت)،
+خودکار می‌ره سراغ همون فایل ساده‌ی SQLite قبلی (shop.db) - یعنی
+برای تست لوکال هیچی عوض نمی‌شه و نیازی به نصب/راه‌اندازی
+PostgreSQL روی کامپیوتر خودت نیست.
 """
 
+import os
 from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 
-DATABASE_URL = "sqlite:///./shop.db"
+DATABASE_URL = os.environ.get("DATABASE_URL", "sqlite:///./shop.db")
+
+# Render آدرس Postgres رو با پیشوند postgres:// می‌ده، ولی SQLAlchemy
+# جدید postgresql:// می‌خواد - خودکار تبدیلش می‌کنیم
+if DATABASE_URL.startswith("postgres://"):
+    DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
+
+IS_SQLITE = DATABASE_URL.startswith("sqlite")
 
 # check_same_thread فقط برای SQLite لازمه
-engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
+connect_args = {"check_same_thread": False} if IS_SQLITE else {}
+
+engine = create_engine(DATABASE_URL, connect_args=connect_args)
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
