@@ -237,9 +237,86 @@ if(getAdminKey()){
 
 }
 
+
+/*====================================
+        LOGIN LOCKOUT COUNTDOWN
+====================================*/
+
+const loginSubmitBtn = document.querySelector('#adminLoginForm button[type="submit"]');
+
+let lockoutInterval = null;
+
+function formatMMSS(totalSeconds){
+
+    const m = Math.floor(totalSeconds / 60);
+
+    const s = totalSeconds % 60;
+
+    return `${m}:${String(s).padStart(2, "0")}`;
+
+}
+
+function startLockoutCountdown(retryAfterSeconds, message){
+
+    const errorEl = document.getElementById("adminLoginError");
+
+    const lockoutEndsAt = Date.now() + retryAfterSeconds * 1000;
+
+    localStorage.setItem("adminLockoutEndsAt", lockoutEndsAt);
+
+    if(lockoutInterval) clearInterval(lockoutInterval);
+
+    loginSubmitBtn.disabled = true;
+
+    const tick = () => {
+
+        const remaining = Math.ceil((lockoutEndsAt - Date.now()) / 1000);
+
+        if(remaining <= 0){
+
+            clearInterval(lockoutInterval);
+
+            lockoutInterval = null;
+
+            loginSubmitBtn.disabled = false;
+
+            loginSubmitBtn.textContent = "ورود";
+
+            errorEl.textContent = "";
+
+            localStorage.removeItem("adminLockoutEndsAt");
+
+            return;
+
+        }
+
+        loginSubmitBtn.textContent = `امتحان دوباره تا ${formatMMSS(remaining)}`;
+
+        errorEl.textContent = message || "";
+
+    };
+
+    tick();
+
+    lockoutInterval = setInterval(tick, 1000);
+
+}
+
+// اگه صفحه رفرش بشه وسط یه قفل فعال، همون تایمر رو ادامه بده
+const savedLockoutEndsAt = Number(localStorage.getItem("adminLockoutEndsAt"));
+
+if(savedLockoutEndsAt && savedLockoutEndsAt > Date.now()){
+
+    startLockoutCountdown(Math.ceil((savedLockoutEndsAt - Date.now()) / 1000), "به‌خاطر تلاش‌های ناموفق زیاد، فعلاً قفله.");
+
+}
+
+
 document.getElementById("adminLoginForm").addEventListener("submit", async (e) => {
 
     e.preventDefault();
+
+    if(loginSubmitBtn.disabled) return;
 
     const password = document.getElementById("adminPassword").value;
 
@@ -261,7 +338,19 @@ document.getElementById("adminLoginForm").addEventListener("submit", async (e) =
 
         if(!res.ok){
 
-            errorEl.textContent = "رمز اشتباهه";
+            const errData = await res.json().catch(() => null);
+
+            const detail = errData?.detail;
+
+            if(res.status === 429 && detail?.retryAfterSeconds){
+
+                startLockoutCountdown(detail.retryAfterSeconds, detail.message);
+
+            }else{
+
+                errorEl.textContent = (typeof detail === "string" ? detail : detail?.message) || "رمز اشتباهه";
+
+            }
 
             return;
 

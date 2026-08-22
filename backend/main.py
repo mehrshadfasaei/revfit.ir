@@ -197,7 +197,10 @@ def admin_login(request: Request, payload: dict, db: Session = Depends(get_db)):
         security_logger.info(f"تلاش لاگین در حین قفل‌بودن از IP {ip}")
         raise HTTPException(
             status_code=429,
-            detail=f"به‌خاطر تلاش‌های ناموفق زیاد، فعلاً قفله. حدود {remaining_minutes} دقیقه‌ی دیگه دوباره امتحان کن."
+            detail={
+                "message": f"به‌خاطر تلاش‌های ناموفق زیاد، فعلاً قفله. حدود {remaining_minutes} دقیقه‌ی دیگه دوباره امتحان کن.",
+                "retryAfterSeconds": remaining_seconds
+            }
         )
 
     if check_admin_password(submitted):
@@ -229,7 +232,10 @@ def admin_login(request: Request, payload: dict, db: Session = Depends(get_db)):
 
         raise HTTPException(
             status_code=429,
-            detail=f"۳ بار رمز اشتباه زدی. برای {lockout_minutes} دقیقه قفل شدی."
+            detail={
+                "message": f"۳ بار رمز اشتباه زدی. برای {lockout_minutes} دقیقه قفل شدی.",
+                "retryAfterSeconds": lockout_minutes * 60
+            }
         )
 
     db.commit()
