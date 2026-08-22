@@ -66,7 +66,20 @@ app.mount("/images", StaticFiles(directory=IMAGES_DIR_FOR_MOUNT), name="images")
 #   RATE LIMITING (جلوگیری از Brute Force و اسپم درخواست)
 # ---------------------------------------------------------
 
-limiter = Limiter(key_func=get_remote_address)
+def get_real_ip(request: Request) -> str:
+    """Render (مثل بیشتر هاست‌های ابری) درخواست‌ها رو از پشت یه
+    پروکسی رد می‌کنه؛ یعنی request.client.host ممکنه IP خودِ
+    پروکسی رو بده، نه IP واقعی بازدیدکننده - که برای همه یکسانه
+    و کل سیستم Rate Limit/قفل لاگین رو بی‌اثر می‌کنه. به‌جاش از
+    هدر X-Forwarded-For (که خودِ پروکسی ست می‌کنه) استفاده می‌کنیم."""
+
+    forwarded = request.headers.get("x-forwarded-for")
+    if forwarded:
+        return forwarded.split(",")[0].strip()
+    return request.client.host if request.client else "unknown"
+
+
+limiter = Limiter(key_func=get_real_ip)
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
@@ -141,9 +154,18 @@ app.add_middleware(
 
 import bcrypt
 
-DEFAULT_PASSWORD_HASH = bcrypt.hashpw(b"guardian1404", bcrypt.gensalt()).decode()
+ADMIN_PASSWORD_HASH = os.environ.get("ADMIN_PASSWORD_HASH")
 
-ADMIN_PASSWORD_HASH = os.environ.get("ADMIN_PASSWORD_HASH", DEFAULT_PASSWORD_HASH)
+if not ADMIN_PASSWORD_HASH:
+    # عمداً هیچ رمز پیش‌فرضی نمی‌ذاریم - چون این کد روی گیت‌هاب
+    # پابلیکه، اگه یه رمز پیش‌فرض ثابت اینجا می‌نوشتیم، هرکسی
+    # می‌تونست ببینتش. به‌جاش، اگه این متغیر ست نشده باشه،
+    # ترجیح می‌دیم بک‌اند اصلاً بالا نیاد (خطای واضح بده) تا
+    # اینکه بی‌سروصدا یه رمز شناخته‌شده رو قبول کنه.
+    raise RuntimeError(
+        "ADMIN_PASSWORD_HASH ست نشده! برای امنیت، بدون این متغیر بک‌اند اجرا نمی‌شه. "
+        "با hash_password.py یه رمز بساز و توی .env یا Environment Variables هاست قرارش بده."
+    )
 
 # لاگ تلاش‌های ناموفق لاگین (فایل security.log کنار همین main.py)
 security_logger = logging.getLogger("security")
@@ -162,7 +184,7 @@ def check_admin_password(submitted_password: str) -> bool:
 
 def verify_admin(request: Request, x_admin_key: str = Header(default=None)):
     if not x_admin_key or not check_admin_password(x_admin_key):
-        security_logger.info(f"تلاش ناموفق دسترسی ادمین از IP {request.client.host}")
+        security_logger.info(f"تلاش ناموفق دسترسی ادمین از IP {get_real_ip(request)}")
         raise HTTPException(status_code=401, detail="دسترسی نداری - رمز ادمین اشتباهه")
     return True
 
@@ -179,7 +201,7 @@ def get_lockout_minutes(lockout_count: int) -> int:
 @app.post("/api/admin/login")
 @limiter.limit("10/minute")
 def admin_login(request: Request, payload: dict, db: Session = Depends(get_db)):
-    ip = request.client.host
+    ip = get_real_ip(request)
     submitted = payload.get("password", "")
 
     attempt = db.query(models.LoginAttempt).filter(models.LoginAttempt.ip_address == ip).first()
@@ -605,7 +627,7 @@ def clear_error_logs(db: Session = Depends(get_db)):
 def submit_contact_message(request: Request, payload: schemas.ContactMessageCreate, db: Session = Depends(get_db)):
     if payload.website:
         # Honeypot ضدربات - این فیلد باید همیشه خالی باشه
-        security_logger.info(f"پیام تماس مشکوک به ربات از IP {request.client.host}")
+        security_logger.info(f"پیام تماس مشکوک به ربات از IP {get_real_ip(request)}")
         raise HTTPException(status_code=400, detail="ارسال پیام با مشکل مواجه شد")
 
     db_message = models.ContactMessage(
@@ -724,7 +746,7 @@ def generate_order_number():
 def create_order(request: Request, order: schemas.OrderCreate, db: Session = Depends(get_db)):
     if order.website:
         # فیلد Honeypot پر شده - یعنی احتمالاً یه ربات فرم رو پر کرده، نه آدم
-        security_logger.info(f"سفارش مشکوک به ربات از IP {request.client.host}")
+        security_logger.info(f"سفارش مشکوک به ربات از IP {get_real_ip(request)}")
         raise HTTPException(status_code=400, detail="ثبت سفارش با مشکل مواجه شد")
 
     if not order.items:
