@@ -129,6 +129,14 @@
 
             </a>
 
+            <a href="#" class="admin-nav-link" data-tab="messages">
+
+                <i class="fa-solid fa-envelope"></i> پیام‌ها
+
+                <span class="admin-nav-badge" id="unreadMessagesBadge" style="display:none;"></span>
+
+            </a>
+
         </nav>
 
         <a href="index.html" class="admin-back-link">
@@ -409,7 +417,83 @@
 
         </section>
 
+        <!-- MESSAGES TAB -->
+
+        <section class="admin-tab-content" id="tab-messages">
+
+            <div class="admin-page-header">
+
+                <h1>پیام‌ها</h1>
+
+            </div>
+
+            <p class="admin-page-note">
+
+                پیام‌هایی که مشتری‌ها از صفحه‌ی «تماس با ما» فرستادن.
+
+            </p>
+
+            <div class="admin-messages-list" id="adminMessagesList">
+
+                <!-- Injected by admin.js -->
+
+            </div>
+
+        </section>
+
     </main>
+
+</div>
+
+<!--=========================================
+            CONTACT MESSAGE DETAIL MODAL
+==========================================-->
+
+<div class="admin-modal-overlay" id="messageModalOverlay">
+
+    <div class="admin-modal">
+
+        <button class="admin-modal-close" id="messageModalClose">
+
+            <i class="fa-solid fa-xmark"></i>
+
+        </button>
+
+        <h2>جزئیات پیام</h2>
+
+        <p class="admin-order-detail-date" id="messageDetailDate"></p>
+
+        <div class="admin-order-detail-section">
+
+            <h4>فرستنده</h4>
+
+            <p id="messageDetailSender"></p>
+
+        </div>
+
+        <div class="admin-order-detail-section">
+
+            <h4>موضوع</h4>
+
+            <p id="messageDetailSubject"></p>
+
+        </div>
+
+        <div class="admin-order-detail-section">
+
+            <h4>متن پیام</h4>
+
+            <p id="messageDetailBody" style="white-space:pre-wrap;"></p>
+
+        </div>
+
+        <button class="admin-btn-primary" id="deleteMessageBtn" style="background:#e0445b;width:100%;">
+
+            <i class="fa-solid fa-trash"></i> حذف پیام
+
+        </button>
+
+    </div>
 
 </div>
 

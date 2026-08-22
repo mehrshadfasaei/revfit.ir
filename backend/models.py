@@ -126,3 +126,17 @@ class ErrorLog(Base):
     user_agent = Column(String, nullable=True)
     stack = Column(String, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
+
+
+class ContactMessage(Base):
+    """پیام‌هایی که مشتری از صفحه‌ی «تماس با ما» می‌فرسته."""
+
+    __tablename__ = "contact_messages"
+
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String, nullable=False)
+    contact_info = Column(String, nullable=False)   # ایمیل یا شماره تماس
+    subject = Column(String, nullable=True)
+    message = Column(String, nullable=False)
+    is_read = Column(Boolean, default=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
