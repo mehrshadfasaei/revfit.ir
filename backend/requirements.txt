@@ -9,3 +9,4 @@ slowapi
 pillow
 bcrypt
 tzdata
+psycopg2-binary
