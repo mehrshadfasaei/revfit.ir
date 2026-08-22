@@ -16,7 +16,7 @@ import uuid
 import html
 import io
 import logging
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -167,18 +167,73 @@ def verify_admin(request: Request, x_admin_key: str = Header(default=None)):
     return True
 
 
+# مدت زمان قفل (به دقیقه) بر اساس چندمین‌بار قفل‌شدنه - هر دور طولانی‌تر می‌شه
+LOCKOUT_DURATIONS_MINUTES = [3, 5, 10, 20, 40, 60]
+
+
+def get_lockout_minutes(lockout_count: int) -> int:
+    index = min(lockout_count - 1, len(LOCKOUT_DURATIONS_MINUTES) - 1)
+    return LOCKOUT_DURATIONS_MINUTES[max(index, 0)]
+
+
 @app.post("/api/admin/login")
-@limiter.limit("5/minute")
-def admin_login(request: Request, payload: dict):
+@limiter.limit("10/minute")
+def admin_login(request: Request, payload: dict, db: Session = Depends(get_db)):
+    ip = request.client.host
     submitted = payload.get("password", "")
 
-    if not check_admin_password(submitted):
-        security_logger.info(f"لاگین ناموفق ادمین از IP {request.client.host}")
-        raise HTTPException(status_code=401, detail="رمز اشتباهه")
+    attempt = db.query(models.LoginAttempt).filter(models.LoginAttempt.ip_address == ip).first()
+    if not attempt:
+        attempt = models.LoginAttempt(ip_address=ip, failed_count=0, lockout_count=0)
+        db.add(attempt)
+        db.flush()
 
-    security_logger.info(f"لاگین موفق ادمین از IP {request.client.host}")
+    now = datetime.utcnow()
 
-    return {"key": submitted}
+    # اگه الان توی دوره‌ی قفل هستیم، اصلاً رمز رو چک نمی‌کنیم
+    if attempt.locked_until and now < attempt.locked_until:
+        remaining_seconds = int((attempt.locked_until - now).total_seconds())
+        remaining_minutes = max(1, remaining_seconds // 60 + (1 if remaining_seconds % 60 else 0))
+        security_logger.info(f"تلاش لاگین در حین قفل‌بودن از IP {ip}")
+        raise HTTPException(
+            status_code=429,
+            detail=f"به‌خاطر تلاش‌های ناموفق زیاد، فعلاً قفله. حدود {remaining_minutes} دقیقه‌ی دیگه دوباره امتحان کن."
+        )
+
+    if check_admin_password(submitted):
+        # لاگین موفق - همه‌چیز رو صفر کن
+        attempt.failed_count = 0
+        attempt.lockout_count = 0
+        attempt.locked_until = None
+        attempt.updated_at = now
+        db.commit()
+
+        security_logger.info(f"لاگین موفق ادمین از IP {ip}")
+        return {"key": submitted}
+
+    # رمز اشتباه بود
+    attempt.failed_count += 1
+    attempt.updated_at = now
+
+    security_logger.info(f"لاگین ناموفق ادمین از IP {ip} (تلاش {attempt.failed_count} از این دوره)")
+
+    if attempt.failed_count >= 3:
+        attempt.lockout_count += 1
+        lockout_minutes = get_lockout_minutes(attempt.lockout_count)
+        attempt.locked_until = now + timedelta(minutes=lockout_minutes)
+        attempt.failed_count = 0
+
+        db.commit()
+
+        security_logger.info(f"قفل‌شدن IP {ip} برای {lockout_minutes} دقیقه (دور {attempt.lockout_count})")
+
+        raise HTTPException(
+            status_code=429,
+            detail=f"۳ بار رمز اشتباه زدی. برای {lockout_minutes} دقیقه قفل شدی."
+        )
+
+    db.commit()
+    raise HTTPException(status_code=401, detail="رمز اشتباهه")
 
 
 # ---------------------------------------------------------
