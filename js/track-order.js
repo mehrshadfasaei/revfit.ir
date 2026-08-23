@@ -70,7 +70,15 @@ function renderOrderResult(order){
 
     document.getElementById("resultOrderNumber").textContent = order.order_number;
 
-    document.getElementById("resultOrderDate").textContent = new Date(order.created_at).toLocaleDateString("fa-IR");
+    try{
+
+        document.getElementById("resultOrderDate").textContent = new Date(order.created_at).toLocaleDateString("fa-IR");
+
+    }catch(err){
+
+        document.getElementById("resultOrderDate").textContent = new Date(order.created_at).toISOString().slice(0, 10);
+
+    }
 
     document.getElementById("resultOrderTotal").textContent = `${formatPrice(order.total)} تومان`;
 
