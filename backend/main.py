@@ -96,7 +96,13 @@ def auto_migrate_missing_columns():
                 print(f"⚠️  اضافه‌کردن ستون {column.name} به جدول {table.name} با خطا مواجه شد: {e}")
 
 
-auto_migrate_missing_columns()
+try:
+    auto_migrate_missing_columns()
+except Exception as e:
+    # حتی اگه این مرحله fail بشه، نباید کل بک‌اند بالا نیاد -
+    # فقط لاگش می‌کنیم و ادامه می‌دیم (بخش‌هایی از سایت که به
+    # اون ستون خاص نیاز ندارن، همچنان درست کار می‌کنن)
+    print(f"⚠️  auto-migrate با خطا مواجه شد (بک‌اند همچنان بالا میاد): {e}")
 
 app = FastAPI(title="Guardian Shop API")
 
