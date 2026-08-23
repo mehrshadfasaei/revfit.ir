@@ -3046,6 +3046,8 @@ margin:0 auto;
         هماهنگ با استایل صفحه‌ی محصولات
 ==================================================*/
 
+@media (min-width:769px){
+
 #featuredProductsGrid .product-card{
 
 display:flex;
@@ -3059,6 +3061,8 @@ border:none;
 border-radius:0;
 
 box-shadow:none;
+
+}
 
 }
 
