@@ -27,7 +27,13 @@ if DATABASE_URL.startswith("postgres://"):
 IS_SQLITE = DATABASE_URL.startswith("sqlite")
 
 # check_same_thread فقط برای SQLite لازمه
-connect_args = {"check_same_thread": False} if IS_SQLITE else {}
+connect_args = {"check_same_thread": False} if IS_SQLITE else {
+    # اگه یه دستور SQL (مثلاً ALTER TABLE موقع auto-migrate) به
+    # هر دلیلی (مثلاً یه قفل نیمه‌کاره از یه دیپلوی قبلیِ کرش‌کرده)
+    # گیر کنه، حداکثر ۱۰ ثانیه صبر می‌کنه بعد خودش fail می‌شه -
+    # به‌جای اینکه کل بک‌اند برای همیشه هنگ کنه و هیچ‌وقت بالا نیاد.
+    "options": "-c statement_timeout=10000"
+}
 
 engine = create_engine(DATABASE_URL, connect_args=connect_args)
 
