@@ -2,7 +2,7 @@
 اسکیمای پایدنتیک - شکل دقیق دیتایی که API می‌گیره/برمی‌گردونه.
 """
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from datetime import datetime
 from typing import List, Optional
 
@@ -83,23 +83,23 @@ class OrderStatusUpdate(BaseModel):
 
 class OrderItemIn(BaseModel):
     id: int          # product id
-    title: str
+    title: str = Field(..., max_length=200)
     price: int
-    size: Optional[str] = None
+    size: Optional[str] = Field(None, max_length=10)
     quantity: int
 
 
 class OrderCreate(BaseModel):
-    fullName: str
-    phone: str
-    province: str
-    city: str
-    address: str
-    postalCode: str
-    paymentMethod: str
-    notes: Optional[str] = None
+    fullName: str = Field(..., max_length=100)
+    phone: str = Field(..., max_length=20)
+    province: str = Field(..., max_length=50)
+    city: str = Field(..., max_length=50)
+    address: str = Field(..., max_length=300)
+    postalCode: str = Field(..., max_length=20)
+    paymentMethod: str = Field(..., max_length=30)
+    notes: Optional[str] = Field(None, max_length=500)
     shippingPaymentType: Optional[str] = "prepaid"    # prepaid | cod (پس‌کرایه)
-    website: Optional[str] = None    # honeypot ضدربات - نباید هیچ‌وقت پر باشه
+    website: Optional[str] = Field(None, max_length=200)    # honeypot ضدربات - نباید هیچ‌وقت پر باشه
     items: List[OrderItemIn]
 
 
@@ -137,10 +137,10 @@ class OrderOut(BaseModel):
 
 
 class ErrorLogCreate(BaseModel):
-    message: str
-    pageUrl: Optional[str] = None
-    userAgent: Optional[str] = None
-    stack: Optional[str] = None
+    message: str = Field(..., max_length=1000)
+    pageUrl: Optional[str] = Field(None, max_length=500)
+    userAgent: Optional[str] = Field(None, max_length=500)
+    stack: Optional[str] = Field(None, max_length=2000)
 
 
 class ErrorLogOut(BaseModel):
@@ -156,11 +156,11 @@ class ErrorLogOut(BaseModel):
 
 
 class ContactMessageCreate(BaseModel):
-    name: str
-    contactInfo: str
-    subject: Optional[str] = None
-    message: str
-    website: Optional[str] = None    # honeypot ضدربات
+    name: str = Field(..., max_length=100)
+    contactInfo: str = Field(..., max_length=100)
+    subject: Optional[str] = Field(None, max_length=150)
+    message: str = Field(..., max_length=1000)
+    website: Optional[str] = Field(None, max_length=200)    # honeypot ضدربات
 
 
 class ContactMessageOut(BaseModel):

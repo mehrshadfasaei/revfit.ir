@@ -106,6 +106,30 @@ async def generic_exception_handler(request: Request, exc: Exception):
 
 
 # ---------------------------------------------------------
+#   محدودیت حجم کل درخواست - جلوی ارسال یه پیام غول‌پیکر رو
+#   می‌گیره (حتی قبل از خوندن کاملش)، تا کسی نتونه با فرستادن
+#   یه متن خیلی طولانی، سرور رو کند/مشغول کنه. سقف رو یه‌کم
+#   بالاتر از حداکثر عکس (۵ مگابایت) گذاشتیم که آپلود عکس خراب
+#   نشه.
+# ---------------------------------------------------------
+
+MAX_REQUEST_BODY_BYTES = 7 * 1024 * 1024   # ۷ مگابایت
+
+
+@app.middleware("http")
+async def limit_request_body_size(request: Request, call_next):
+    content_length = request.headers.get("content-length")
+
+    if content_length and int(content_length) > MAX_REQUEST_BODY_BYTES:
+        return JSONResponse(
+            status_code=413,
+            content={"detail": "حجم درخواست خیلی زیاده."}
+        )
+
+    return await call_next(request)
+
+
+# ---------------------------------------------------------
 #   هدرهای امنیتی HTTP (طبق OWASP Secure Headers Project)
 #   این هدرها روی هر پاسخی که بک‌اند می‌ده اضافه می‌شن و به
 #   مرورگر می‌گن چه رفتار امن‌تری داشته باشه.
