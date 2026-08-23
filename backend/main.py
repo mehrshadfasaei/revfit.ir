@@ -23,7 +23,7 @@ from dotenv import load_dotenv
 from fastapi import FastAPI, Depends, HTTPException, Header, UploadFile, File, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, Response
 from sqlalchemy.orm import Session
 from sqlalchemy import or_
 from slowapi import Limiter, _rate_limit_exceeded_handler
@@ -280,9 +280,18 @@ ALLOWED_IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp", ".gif"}
 MAX_IMAGE_SIZE_MB = 5
 
 
+EXTENSION_TO_MIME = {
+    ".jpg": "image/jpeg",
+    ".jpeg": "image/jpeg",
+    ".png": "image/png",
+    ".webp": "image/webp",
+    ".gif": "image/gif",
+}
+
+
 @app.post("/api/admin/upload-image", dependencies=[Depends(verify_admin)])
 @limiter.limit("20/minute")
-async def upload_image(request: Request, file: UploadFile = File(...)):
+async def upload_image(request: Request, file: UploadFile = File(...), db: Session = Depends(get_db)):
     extension = Path(file.filename).suffix.lower() or ".png"
 
     if extension not in ALLOWED_IMAGE_EXTENSIONS:
@@ -301,17 +310,36 @@ async def upload_image(request: Request, file: UploadFile = File(...)):
     except Exception:
         raise HTTPException(status_code=400, detail="فایل آپلودشده یه عکس معتبر نیست")
 
-    IMAGES_DIR.mkdir(exist_ok=True)
+    # عکس رو مستقیم توی دیتابیس ذخیره می‌کنیم (نه روی دیسک سرور) -
+    # چون دیسک هاست‌های رایگان موقتیه و با هر دیپلوی پاک می‌شه،
+    # ولی خودِ دیتابیس (روی PostgreSQL) دائمیه.
+    image_id = uuid.uuid4().hex
 
-    safe_name = f"{uuid.uuid4().hex}{extension}"
-    destination = IMAGES_DIR / safe_name
-
-    with open(destination, "wb") as f:
-        f.write(contents)
+    db_image = models.StoredImage(
+        id=image_id,
+        content_type=EXTENSION_TO_MIME.get(extension, "application/octet-stream"),
+        data=contents,
+    )
+    db.add(db_image)
+    db.commit()
 
     # آدرس کامل، چون فرانت‌اند ممکنه روی یه دامنه‌ی کاملاً جدا باشه
     # (مثلاً گیت‌هاب پیجز) و مسیر نسبی دیگه کار نمی‌کنه
-    return {"path": f"{str(request.base_url).rstrip('/')}/images/{safe_name}"}
+    return {"path": f"{str(request.base_url).rstrip('/')}/api/images/{image_id}"}
+
+
+@app.get("/api/images/{image_id}")
+def get_stored_image(image_id: str, db: Session = Depends(get_db)):
+    db_image = db.query(models.StoredImage).filter(models.StoredImage.id == image_id).first()
+
+    if not db_image:
+        raise HTTPException(status_code=404, detail="عکس پیدا نشد")
+
+    return Response(
+        content=db_image.data,
+        media_type=db_image.content_type,
+        headers={"Cache-Control": "public, max-age=31536000, immutable"}
+    )
 
 
 # ---------------------------------------------------------
