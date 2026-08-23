@@ -36,6 +36,7 @@ class ProductOut(BaseModel):
     image: str
     description: Optional[str] = None
     in_stock: bool = True
+    is_archived: bool = False
     rating: float
     sales: int
     images: List[ProductImageOut] = []
@@ -65,6 +66,7 @@ class ProductUpdate(BaseModel):
     image: Optional[str] = None
     description: Optional[str] = None
     in_stock: Optional[bool] = None
+    is_archived: Optional[bool] = None
     rating: Optional[float] = None
     sales: Optional[int] = None
 

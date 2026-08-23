@@ -23,6 +23,7 @@ class Product(Base):
     image = Column(String, nullable=False)            # عکس اصلی/کاور (برای سازگاری با بقیه‌ی سایت)
     description = Column(Text, nullable=True)          # توضیحات دستی ادمین (اگه خالی باشه، سایت خودکار می‌سازه)
     in_stock = Column(Boolean, default=True)            # موجود/ناموجود (کل محصول)
+    is_archived = Column(Boolean, default=False)          # بایگانی‌شده - از فروشگاه محو می‌شه ولی سابقه‌ی سفارش‌ها سالم می‌مونه
     out_of_stock_sizes = Column(String, nullable=True)  # سایزهای ناموجود، با کاما جدا (مثلاً "M,XL")
     rating = Column(Float, default=4.8)
     sales = Column(Integer, default=0)
