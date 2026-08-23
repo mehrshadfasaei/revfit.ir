@@ -405,7 +405,7 @@ seed_products()
 
 @app.get("/api/products", response_model=list[schemas.ProductOut])
 def list_products(search: str | None = None, db: Session = Depends(get_db)):
-    query = db.query(models.Product)
+    query = db.query(models.Product).filter(models.Product.is_archived == False)
 
     if search:
         like = f"%{search}%"
@@ -418,10 +418,22 @@ def list_products(search: str | None = None, db: Session = Depends(get_db)):
 
 @app.get("/api/products/{product_id}", response_model=schemas.ProductOut)
 def get_product(product_id: int, db: Session = Depends(get_db)):
-    product = db.query(models.Product).filter(models.Product.id == product_id).first()
+    product = db.query(models.Product).filter(
+        models.Product.id == product_id,
+        models.Product.is_archived == False
+    ).first()
     if not product:
         raise HTTPException(status_code=404, detail="محصول پیدا نشد")
     return product
+
+
+@app.get("/api/admin/products", response_model=list[schemas.ProductOut], dependencies=[Depends(verify_admin)])
+def list_all_products_for_admin(db: Session = Depends(get_db)):
+    """برخلاف /api/products (که فقط عمومیه)، این یکی محصولات
+    بایگانی‌شده رو هم نشون می‌ده - چون خودِ ادمین باید بتونه
+    ببینتشون و در صورت نیاز دوباره فعالشون کنه."""
+
+    return db.query(models.Product).all()
 
 
 # ---------------------------------------------------------
@@ -479,22 +491,22 @@ def delete_product(product_id: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="محصول پیدا نشد")
 
     # اگه این محصول توی یه سفارش قبلی (حتی قدیمی) استفاده شده،
-    # نمی‌شه حذفش کرد - چون سفارش‌ها باید سابقه‌شون دست‌نخورده
-    # بمونه. روی PostgreSQL این محدودیت واقعاً توسط خودِ دیتابیس
-    # اجرا می‌شه (برخلاف SQLite لوکال که این‌و راحت اجازه می‌داد)
+    # نمی‌شه واقعاً حذفش کرد - چون سفارش‌ها باید سابقه‌شون دست‌نخورده
+    # بمونه. به‌جاش فقط «بایگانی»ش می‌کنیم: از فروشگاه محو می‌شه
+    # (دیگه مشتری‌ها نمی‌بیننش) ولی خودِ رکورد و سفارش‌های قدیمیش
+    # سالم می‌مونن.
     has_order_history = db.query(models.OrderItem).filter(
         models.OrderItem.product_id == product_id
     ).first() is not None
 
     if has_order_history:
-        raise HTTPException(
-            status_code=400,
-            detail="این محصول توی سفارش‌های قبلی استفاده شده، برای حفظ سابقه‌ی سفارش‌ها نمی‌شه حذفش کرد. به‌جاش می‌تونی از تیک «محصول موجوده» خاموشش کنی."
-        )
+        db_product.is_archived = True
+        db.commit()
+        return {"deleted": False, "archived": True, "detail": "این محصول توی سفارش‌های قبلی استفاده شده، برای همین به‌جای حذف کامل، بایگانی شد (دیگه توی فروشگاه نشون داده نمی‌شه)."}
 
     db.delete(db_product)
     db.commit()
-    return {"deleted": True}
+    return {"deleted": True, "archived": False}
 
 
 # ---------------------------------------------------------
