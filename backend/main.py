@@ -25,7 +25,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import JSONResponse, Response
 from sqlalchemy.orm import Session
-from sqlalchemy import or_
+from sqlalchemy import or_, inspect, text
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
@@ -44,6 +44,59 @@ load_dotenv()
 
 # ساخت جدول‌ها (اگه وجود نداشته باشن)
 Base.metadata.create_all(bind=engine)
+
+
+def auto_migrate_missing_columns():
+    """
+    create_all() فقط جدول‌های کاملاً جدید رو می‌سازه؛ اگه یه
+    ستون تازه به یه مدل اضافه کنیم ولی جدولش از قبل روی دیتابیس
+    (مخصوصاً PostgreSQL واقعی که دیتای واقعی داره) وجود داشته
+    باشه، create_all دست‌نخورده ولش می‌کنه - و بک‌اند موقع
+    استفاده از اون ستون کرش می‌کنه.
+
+    این تابع خودش چک می‌کنه هر جدول چه ستون‌هایی کم داره و با
+    ALTER TABLE اضافه‌شون می‌کنه - هم روی PostgreSQL هم SQLite
+    کار می‌کنه. جایگزین کامل Alembic نیست، ولی برای اضافه‌کردن
+    ستون‌های ساده (که همیشه کاری هست که اینجا می‌کنیم) کافیه.
+    """
+
+    inspector = inspect(engine)
+    existing_tables = set(inspector.get_table_names())
+
+    for table in Base.metadata.sorted_tables:
+        if table.name not in existing_tables:
+            continue  # جدول کاملاً جدیده، create_all خودش ساختتش
+
+        existing_columns = {col["name"] for col in inspector.get_columns(table.name)}
+
+        for column in table.columns:
+            if column.name in existing_columns:
+                continue
+
+            col_type = column.type.compile(dialect=engine.dialect)
+
+            default_clause = ""
+            if column.default is not None and getattr(column.default, "is_scalar", False):
+                default_value = column.default.arg
+                if isinstance(default_value, bool):
+                    default_clause = f" DEFAULT {'TRUE' if default_value else 'FALSE'}"
+                elif isinstance(default_value, (int, float)):
+                    default_clause = f" DEFAULT {default_value}"
+                elif isinstance(default_value, str):
+                    default_clause = f" DEFAULT '{default_value}'"
+
+            try:
+                with engine.connect() as conn:
+                    conn.execute(text(
+                        f"ALTER TABLE {table.name} ADD COLUMN {column.name} {col_type}{default_clause}"
+                    ))
+                    conn.commit()
+                print(f"✅ ستون {column.name} به جدول {table.name} اضافه شد (auto-migrate)")
+            except Exception as e:
+                print(f"⚠️  اضافه‌کردن ستون {column.name} به جدول {table.name} با خطا مواجه شد: {e}")
+
+
+auto_migrate_missing_columns()
 
 app = FastAPI(title="Guardian Shop API")
 
