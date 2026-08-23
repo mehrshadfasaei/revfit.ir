@@ -478,6 +478,20 @@ def delete_product(product_id: int, db: Session = Depends(get_db)):
     if not db_product:
         raise HTTPException(status_code=404, detail="محصول پیدا نشد")
 
+    # اگه این محصول توی یه سفارش قبلی (حتی قدیمی) استفاده شده،
+    # نمی‌شه حذفش کرد - چون سفارش‌ها باید سابقه‌شون دست‌نخورده
+    # بمونه. روی PostgreSQL این محدودیت واقعاً توسط خودِ دیتابیس
+    # اجرا می‌شه (برخلاف SQLite لوکال که این‌و راحت اجازه می‌داد)
+    has_order_history = db.query(models.OrderItem).filter(
+        models.OrderItem.product_id == product_id
+    ).first() is not None
+
+    if has_order_history:
+        raise HTTPException(
+            status_code=400,
+            detail="این محصول توی سفارش‌های قبلی استفاده شده، برای حفظ سابقه‌ی سفارش‌ها نمی‌شه حذفش کرد. به‌جاش می‌تونی از تیک «محصول موجوده» خاموشش کنی."
+        )
+
     db.delete(db_product)
     db.commit()
     return {"deleted": True}
