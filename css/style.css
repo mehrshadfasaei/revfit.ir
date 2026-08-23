@@ -2816,6 +2816,14 @@ max-width:320px;
 
 margin:0 auto;
 
+background:transparent;
+
+border:none;
+
+border-radius:0;
+
+box-shadow:none;
+
 }
 
 .mobile-slider-dots{
