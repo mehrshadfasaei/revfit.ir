@@ -418,7 +418,11 @@ async function loadProducts(){
 
     try{
 
-        const res = await fetchWithRetry(`${API_BASE_URL}/api/products`);
+        const res = await fetchWithRetry(`${API_BASE_URL}/api/admin/products`, {
+
+            headers: adminHeaders()
+
+        });
 
         allProducts = await res.json();
 
@@ -434,11 +438,11 @@ async function loadProducts(){
 
         tbody.innerHTML = allProducts.map(p => `
 
-            <tr>
+            <tr class="${p.is_archived ? "admin-row-archived" : ""}">
 
                 <td><img src="${p.image}" alt="${p.title}"></td>
 
-                <td>${p.title}</td>
+                <td>${p.title}${p.is_archived ? '<span class="admin-archived-badge">بایگانی‌شده</span>' : ""}</td>
 
                 <td>${p.category}</td>
 
@@ -451,6 +455,8 @@ async function loadProducts(){
                 <td>
 
                     ${(() => {
+
+                        if(p.is_archived) return `<span class="admin-stock-badge out">بایگانی</span>`;
 
                         const totalStock = (p.stock || []).reduce((sum, s) => sum + s.quantity, 0);
 
@@ -472,11 +478,13 @@ async function loadProducts(){
 
                         </button>
 
-                        <button class="admin-action-btn delete" data-id="${p.id}" title="حذف">
+                        ${p.is_archived
 
-                            <i class="fa-solid fa-trash"></i>
+                            ? `<button class="admin-action-btn unarchive" data-id="${p.id}" title="فعال‌کردن دوباره"><i class="fa-solid fa-rotate-left"></i></button>`
 
-                        </button>
+                            : `<button class="admin-action-btn delete" data-id="${p.id}" title="حذف"><i class="fa-solid fa-trash"></i></button>`
+
+                        }
 
                     </div>
 
@@ -1017,9 +1025,13 @@ document.getElementById("adminProductsTableBody").addEventListener("click", (e) 
 
     const deleteBtn = e.target.closest(".delete");
 
+    const unarchiveBtn = e.target.closest(".unarchive");
+
     if(editBtn) openProductModal(Number(editBtn.dataset.id));
 
     if(deleteBtn) deleteProduct(Number(deleteBtn.dataset.id));
+
+    if(unarchiveBtn) unarchiveProduct(Number(unarchiveBtn.dataset.id));
 
 });
 
@@ -1039,11 +1051,45 @@ async function deleteProduct(id){
 
         if(!res.ok) throw new Error("خطا در حذف");
 
+        const data = await res.json();
+
+        if(data.archived){
+
+            alert("این محصول توی سفارش‌های قبلی استفاده شده، برای همین به‌جای حذف کامل، بایگانی شد. دیگه توی فروشگاه نشون داده نمی‌شه، ولی هروقت خواستی می‌تونی از همین جدول دوباره فعالش کنی.");
+
+        }
+
         loadProducts();
 
     }catch(err){
 
         alert("حذف محصول با مشکل مواجه شد.");
+
+    }
+
+}
+
+async function unarchiveProduct(id){
+
+    try{
+
+        const res = await fetchWithRetry(`${API_BASE_URL}/api/products/${id}`, {
+
+            method: "PUT",
+
+            headers: adminHeaders({ "Content-Type": "application/json" }),
+
+            body: JSON.stringify({ is_archived: false })
+
+        });
+
+        if(!res.ok) throw new Error("خطا در فعال‌کردن دوباره");
+
+        loadProducts();
+
+    }catch(err){
+
+        alert("فعال‌کردن دوباره‌ی محصول با مشکل مواجه شد.");
 
     }
 
@@ -1245,27 +1291,99 @@ productModalOverlay.addEventListener("click", (e) => {
 
 });
 
-async function uploadImageFile(file){
+function showUploadProgress(){
 
-    const formData = new FormData();
+    const wrap = document.getElementById("uploadProgressWrap");
 
-    formData.append("file", file);
+    const bar = document.getElementById("uploadProgressBar");
 
-    const res = await fetchWithRetry(`${API_BASE_URL}/api/admin/upload-image`, {
+    const text = document.getElementById("uploadProgressText");
 
-        method: "POST",
+    if(wrap) wrap.style.display = "flex";
 
-        headers: adminHeaders(),
+    if(bar) bar.style.width = "0%";
 
-        body: formData
+    if(text) text.textContent = "۰٪";
+
+}
+
+function updateUploadProgress(percent){
+
+    const bar = document.getElementById("uploadProgressBar");
+
+    const text = document.getElementById("uploadProgressText");
+
+    if(bar) bar.style.width = `${percent}%`;
+
+    if(text) text.textContent = `${percent}٪`;
+
+}
+
+function hideUploadProgress(){
+
+    const wrap = document.getElementById("uploadProgressWrap");
+
+    if(wrap) wrap.style.display = "none";
+
+}
+
+function uploadImageFile(file){
+
+    // از fetch استفاده نمی‌کنیم چون نمی‌تونه پیشرفت آپلود رو
+    // گزارش بده؛ XMLHttpRequest این قابلیت رو داره (upload.onprogress)
+    return new Promise((resolve, reject) => {
+
+        const formData = new FormData();
+
+        formData.append("file", file);
+
+        const xhr = new XMLHttpRequest();
+
+        xhr.open("POST", `${API_BASE_URL}/api/admin/upload-image`);
+
+        xhr.setRequestHeader("X-Admin-Key", getAdminKey());
+
+        xhr.upload.addEventListener("progress", (e) => {
+
+            if(e.lengthComputable){
+
+                const percent = Math.round((e.loaded / e.total) * 100);
+
+                updateUploadProgress(percent);
+
+            }
+
+        });
+
+        xhr.addEventListener("load", () => {
+
+            if(xhr.status >= 200 && xhr.status < 300){
+
+                updateUploadProgress(100);
+
+                try{
+
+                    resolve(JSON.parse(xhr.responseText).path);
+
+                }catch(err){
+
+                    reject(new Error("پاسخ نامعتبر از سرور"));
+
+                }
+
+            }else{
+
+                reject(new Error("آپلود عکس با مشکل مواجه شد"));
+
+            }
+
+        });
+
+        xhr.addEventListener("error", () => reject(new Error("آپلود عکس با مشکل مواجه شد - اتصال قطع شد")));
+
+        xhr.send(formData);
 
     });
-
-    if(!res.ok) throw new Error("آپلود عکس با مشکل مواجه شد");
-
-    const data = await res.json();
-
-    return data.path;
 
 }
 
@@ -1278,6 +1396,8 @@ document.getElementById("productImageFile").addEventListener("change", async (e)
     if(currentEditingProductId){
 
         // توی حالت ویرایش، عکس‌های جدید بلافاصله آپلود و به گالری اضافه می‌شن
+        showUploadProgress();
+
         for(const file of files){
 
             try{
@@ -1309,6 +1429,8 @@ document.getElementById("productImageFile").addEventListener("change", async (e)
             }
 
         }
+
+        hideUploadProgress();
 
         renderGalleryPreview();
 
@@ -1520,6 +1642,8 @@ productForm.addEventListener("submit", async (e) => {
 
             const uploadedPaths = [];
 
+            showUploadProgress();
+
             for(const file of pendingCreateFiles){
 
                 const path = await uploadImageFile(file);
@@ -1527,6 +1651,8 @@ productForm.addEventListener("submit", async (e) => {
                 uploadedPaths.push(path);
 
             }
+
+            hideUploadProgress();
 
             payload.image = uploadedPaths[0];
 
@@ -1570,6 +1696,8 @@ productForm.addEventListener("submit", async (e) => {
         alert("ذخیره محصول با مشکل مواجه شد. مطمئن شو بک‌اند روشنه.");
 
     }finally{
+
+        hideUploadProgress();
 
         submitBtn.disabled = false;
 
