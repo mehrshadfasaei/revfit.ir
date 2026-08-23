@@ -6,7 +6,7 @@ Order        -> هر سفارش ثبت‌شده از صفحه‌ی checkout.html
 OrderItem    -> ردیف‌های داخل هر سفارش (کدوم محصول، چند عدد)
 """
 
-from sqlalchemy import Column, Integer, String, Float, DateTime, ForeignKey, Text, Boolean
+from sqlalchemy import Column, Integer, String, Float, DateTime, ForeignKey, Text, Boolean, LargeBinary
 from sqlalchemy.orm import relationship
 from datetime import datetime
 
@@ -157,3 +157,17 @@ class LoginAttempt(Base):
     lockout_count = Column(Integer, default=0)     # چندمین بار قفل شده (برای تعیین مدت زمان بعدی)
     locked_until = Column(DateTime, nullable=True)
     updated_at = Column(DateTime, default=datetime.utcnow)
+
+
+class StoredImage(Base):
+    """عکس‌هایی که از پنل ادمین آپلود می‌شن، مستقیم توی خودِ
+    دیتابیس ذخیره می‌شن (نه روی دیسک سرور) - چون دیسک هاست‌های
+    رایگان موقتیه و با هر دیپلوی پاک می‌شه، ولی خودِ دیتابیس
+    (روی PostgreSQL) دائمیه."""
+
+    __tablename__ = "stored_images"
+
+    id = Column(String, primary_key=True, index=True)   # همون uuid که قبلاً اسم فایل بود
+    content_type = Column(String, nullable=False)          # مثلاً image/jpeg
+    data = Column(LargeBinary, nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
