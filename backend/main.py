@@ -31,7 +31,7 @@ from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
 from PIL import Image
 
-from database import Base, engine, get_db
+from database import Base, engine, get_db, IS_SQLITE
 import models
 import schemas
 import sms
@@ -41,6 +41,36 @@ import email_notify
 # روی هاست واقعی (لیارا و امثالش)، این متغیرها معمولاً از
 # پنل خود هاست ست می‌شن، نه از فایل .env - بدون مشکل کار می‌کنه.
 load_dotenv()
+
+def clear_stale_database_locks():
+    """
+    اگه یه دیپلوی قبلی کرش کرده باشه، ممکنه یه اتصال نیمه‌باز
+    به دیتابیس جا گذاشته باشه که هنوز قفل رو یه جدول نگه داشته -
+    و همین قفل جلوی هر عملیات جدیدی (حتی یه SELECT ساده، یا
+    حتی create_all پایین‌تر) رو می‌گیره. این تابع، قبل از هر
+    کاری، هر اتصال دیگه‌ای (غیر از خودمون) به همین دیتابیس رو
+    می‌بنده تا این‌جور قفل‌های یتیم‌مونده خودکار پاک بشن. فقط
+    روی PostgreSQL معنی داره (SQLite اصلاً این مفهوم رو نداره).
+    """
+
+    if IS_SQLITE:
+        return
+
+    try:
+        with engine.connect() as conn:
+            conn.execute(text("""
+                SELECT pg_terminate_backend(pid)
+                FROM pg_stat_activity
+                WHERE datname = current_database()
+                  AND pid != pg_backend_pid()
+            """))
+            conn.commit()
+        print("✅ اتصال‌های قدیمی/نیمه‌باز احتمالی به دیتابیس بسته شدن")
+    except Exception as e:
+        print(f"⚠️  پاک‌کردن اتصال‌های قدیمی با خطا مواجه شد (ادامه می‌دیم): {e}")
+
+
+clear_stale_database_locks()
 
 # ساخت جدول‌ها (اگه وجود نداشته باشن)
 Base.metadata.create_all(bind=engine)
