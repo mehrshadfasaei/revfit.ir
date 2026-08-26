@@ -1,0 +1,80 @@
+/*====================================
+        SHARED PRODUCT DATA SOURCE
+
+        از بک‌اند واقعی (FastAPI + SQLite) می‌خونه.
+
+        نکته‌ی مهم درباره‌ی هاست رایگان (Render):
+        سرویس رایگان بعد از چند دقیقه بی‌کاری می‌خوابه؛
+        اولین درخواست بعد از خواب ممکنه ۳۰-۵۰ ثانیه طول
+        بکشه یا حتی یه‌بار fail بشه. برای همین یه‌بار
+        دیگه امتحان می‌کنیم قبل از اینکه تسلیم بشیم -
+        و اگه واقعاً در دسترس نبود، به‌جای نشون‌دادن
+        محصولات ساختگی/قدیمی، صادقانه یه آرایه‌ی خالی
+        برمی‌گردونیم تا هر صفحه خودش پیام «اتصال برقرار
+        نشد» رو نشون بده.
+
+        (پورت‌شده از js/shop-data.js و js/common.js —
+        رفتار دقیقاً یکسانه)
+====================================*/
+
+export const API_BASE_URL = "https://revfit-ir.onrender.com";
+
+export async function getProducts(retryCount = 0) {
+    try {
+        const res = await fetch(`${API_BASE_URL}/api/products`);
+
+        if (!res.ok) throw new Error("API error");
+
+        return await res.json();
+    } catch (err) {
+        if (retryCount < 2) {
+            console.warn(`⚠️ اتصال به بک‌اند برقرار نشد؛ تلاش دوباره... (${retryCount + 1}/2)`);
+
+            await new Promise((resolve) => setTimeout(resolve, 4000));
+
+            return getProducts(retryCount + 1);
+        }
+
+        console.error("❌ اتصال به بک‌اند بعد از چند تلاش هم برقرار نشد.", err);
+
+        logClientError(`getProducts failed after retries: ${err.message}`, { stack: err.stack });
+
+        return [];
+    }
+}
+
+export async function getProductById(id) {
+    const products = await getProducts();
+
+    return products.find((p) => p.id === Number(id)) || null;
+}
+
+/*====================================
+        CLIENT ERROR LOGGING
+
+        هر خطای واقعی که توی مرورگر مشتری‌ها اتفاق میفته
+        (خطای جاوااسکریپت، fetch شکست‌خورده و...) رو
+        می‌فرسته بک‌اند تا توی پنل ادمین ببینیمش.
+====================================*/
+
+export function logClientError(message, extra = {}) {
+    try {
+        fetch(`${API_BASE_URL}/api/log-error`, {
+            method: "POST",
+
+            headers: { "Content-Type": "application/json" },
+
+            body: JSON.stringify({
+                message: String(message).slice(0, 1000),
+
+                pageUrl: window.location.href,
+
+                userAgent: navigator.userAgent,
+
+                stack: extra.stack ? String(extra.stack).slice(0, 2000) : null,
+            }),
+
+            keepalive: true,
+        }).catch(() => {}); // اگه خودِ لاگ‌فرستادن هم fail بشه، دیگه کاری نمی‌کنیم (جلوگیری از حلقه‌ی بی‌نهایت)
+    } catch (e) {}
+}
