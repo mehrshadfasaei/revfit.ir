@@ -1,23 +1,31 @@
 """
-ارسال ایمیل به صاحب فروشگاه هر بار که سفارش جدیدی ثبت می‌شه.
+ارسال ایمیل (اطلاع‌رسانی سفارش جدید به صاحب فروشگاه + کد تأیید
+ثبت‌نام/فراموشی رمز به خودِ مشتری‌ها).
 
-با Brevo (قبلاً Sendinblue) کار می‌کنه - یه سرویس ایمیل ترنزکشنال
-رایگان (تا ۳۰۰ ایمیل در روز) که از طریق HTTPS کار می‌کنه، نه SMTP.
+با Resend کار می‌کنه - یه سرویس ایمیل ترنزکشنال رایگان (تا ۳٬۰۰۰
+ایمیل در ماه، بدون نیاز به کارت اعتباری) که از طریق HTTPS API کار
+می‌کنه، نه SMTP.
 
 ⚠️ چرا SMTP معمولی (مثل جیمیل) کار نمی‌کنه: هاست‌های رایگان
 مثل Render، اتصال خروجی SMTP (پورت ۵۸۷) رو کامل مسدود می‌کنن
 (برای جلوگیری از سوءاستفاده/اسپم) - این محدودیت خودِ هاسته، نه
-تنظیمات ما. Brevo چون از طریق یه API عادی HTTPS کار می‌کنه (مثل
+تنظیمات ما. Resend چون از طریق یه API عادی HTTPS کار می‌کنه (مثل
 همون کاوه‌نگار برای پیامک)، این مشکل رو نداره.
 
 برای فعال‌سازی:
-1. برو brevo.com و ثبت‌نام کن (رایگانه)
-2. توی پنل، برو: Settings (⚙️ بالا راست) → SMTP & API → API Keys
-3. یه API Key جدید بساز (دکمه‌ی "Generate a new API key")
-4. توی فایل .env این‌و اضافه کن:
-   BREVO_API_KEY=همون-کلید-تو
+1. برو resend.com و ثبت‌نام کن (رایگانه، کارت لازم نیست)
+2. توی پنل، برو: API Keys → Create API Key
+3. توی فایل .env این‌و اضافه کن:
+   RESEND_API_KEY=همون-کلید-تو
    OWNER_EMAIL=ایمیلی-که-میخوای-اطلاعیه-بیاد@gmail.com
-   SENDER_EMAIL=یه-ایمیل-فرستنده (می‌تونه همون OWNER_EMAIL باشه)
+   SENDER_EMAIL=یه-ایمیل-فرستنده
+
+   نکته‌ی مهم درباره‌ی SENDER_EMAIL: تا وقتی یه دامنه‌ی خودت رو
+   توی Resend (بخش Domains) verify نکردی، فقط می‌تونی از آدرس
+   تستی خودِ Resend بفرستی: onboarding@resend.dev - این آدرس
+   فقط برای تست/توسعه‌ست (محدودیت داره، فقط به ایمیل خودِ حساب
+   Resend می‌رسه)؛ برای ارسال واقعی به مشتری‌ها، باید یه دامنه
+   (مثلاً از همون revfit.ir) رو verify کنی.
 
 اگه این متغیرها ست نشده باشن، ایمیل اصلاً ارسال نمی‌شه ولی سایت
 کرش نمی‌کنه - فقط توی لاگ بک‌اند یه هشدار می‌بینی.
@@ -26,9 +34,41 @@
 import os
 import requests
 
-BREVO_API_KEY = os.environ.get("BREVO_API_KEY")
+RESEND_API_KEY = os.environ.get("RESEND_API_KEY")
 OWNER_EMAIL = os.environ.get("OWNER_EMAIL")
 SENDER_EMAIL = os.environ.get("SENDER_EMAIL") or OWNER_EMAIL
+
+RESEND_API_URL = "https://api.resend.com/emails"
+
+
+def _send_via_resend(to_email: str, subject: str, html_body: str) -> bool:
+    """کمکی مشترک بین دو تابع پایین - یه درخواست ساده به Resend API."""
+
+    try:
+        response = requests.post(
+            RESEND_API_URL,
+            headers={
+                "Authorization": f"Bearer {RESEND_API_KEY}",
+                "Content-Type": "application/json",
+            },
+            json={
+                "from": f"RevFit <{SENDER_EMAIL}>",
+                "to": [to_email],
+                "subject": subject,
+                "html": html_body,
+            },
+            timeout=10,
+        )
+
+        if response.status_code in (200, 201):
+            return True
+
+        print(f"⚠️  خطا در ارسال ایمیل: {response.status_code} - {response.text}")
+        return False
+
+    except Exception as e:
+        print(f"⚠️  ارسال ایمیل با خطا مواجه شد: {e}")
+        return False
 
 
 def send_new_order_email(order) -> bool:
@@ -41,8 +81,8 @@ def send_new_order_email(order) -> bool:
     خراب نکنه.
     """
 
-    if not (BREVO_API_KEY and OWNER_EMAIL and SENDER_EMAIL):
-        print("⚠️  متغیرهای BREVO_API_KEY / OWNER_EMAIL / SENDER_EMAIL ست نشدن؛ ایمیل ارسال نشد.")
+    if not (RESEND_API_KEY and OWNER_EMAIL and SENDER_EMAIL):
+        print("⚠️  متغیرهای RESEND_API_KEY / OWNER_EMAIL / SENDER_EMAIL ست نشدن؛ ایمیل ارسال نشد.")
         return False
 
     items_html = "".join(
@@ -70,30 +110,39 @@ def send_new_order_email(order) -> bool:
     </div>
     """
 
-    try:
-        response = requests.post(
-            "https://api.brevo.com/v3/smtp/email",
-            headers={
-                "api-key": BREVO_API_KEY,
-                "Content-Type": "application/json",
-                "Accept": "application/json",
-            },
-            json={
-                "sender": {"email": SENDER_EMAIL, "name": "RevFit"},
-                "to": [{"email": OWNER_EMAIL}],
-                "subject": f"🛍️ سفارش جدید: {order.order_number}",
-                "htmlContent": html_body,
-            },
-            timeout=10,
-        )
+    return _send_via_resend(OWNER_EMAIL, f"🛍️ سفارش جدید: {order.order_number}", html_body)
 
-        if response.status_code in (200, 201):
-            return True
 
-        print(f"⚠️  خطا در ارسال ایمیل: {response.status_code} - {response.text}")
+def send_verification_email(to_email: str, code: str, purpose: str) -> bool:
+    """
+    کد ۶ رقمی ثبت‌نام یا فراموشی رمز رو برای خودِ مشتری می‌فرسته
+    (برخلاف send_new_order_email که همیشه برای OWNER_EMAIL می‌رفت).
+    فقط به RESEND_API_KEY و SENDER_EMAIL نیاز داره (نه OWNER_EMAIL،
+    چون گیرنده اینجا مشتریه نه صاحب فروشگاه).
+
+    مثل تابع بالا، اگه چیزی fail بشه یا متغیرها ست نشده باشن،
+    فقط False برمی‌گردونه - خطا throw نمی‌کنه تا جریان ثبت‌نام/
+    فراموشی رمز رو خراب نکنه.
+    """
+
+    if not (RESEND_API_KEY and SENDER_EMAIL):
+        print("⚠️  متغیرهای RESEND_API_KEY / SENDER_EMAIL ست نشدن؛ ایمیل تأیید ارسال نشد.")
         return False
 
-    except Exception as e:
-        print(f"⚠️  ارسال ایمیل سفارش با خطا مواجه شد: {e}")
-        return False
+    title = "تأیید ایمیل" if purpose == "register" else "بازیابی رمز عبور"
+    intro = (
+        "برای تکمیل ثبت‌نام، این کد رو وارد کن:"
+        if purpose == "register"
+        else "برای بازیابی رمز عبورت، این کد رو وارد کن:"
+    )
 
+    html_body = f"""
+    <div style="font-family:Tahoma,Arial,sans-serif;direction:rtl;text-align:right;line-height:1.8;">
+        <h2>{title}</h2>
+        <p>{intro}</p>
+        <p style="font-size:28px;font-weight:bold;letter-spacing:4px;">{code}</p>
+        <p style="color:#888;font-size:13px;">این کد تا ۱۰ دقیقه‌ی دیگه معتبره. اگه خودت این درخواست رو نداده بودی، این ایمیل رو نادیده بگیر.</p>
+    </div>
+    """
+
+    return _send_via_resend(to_email, f"کد تأیید RevFit: {code}", html_body)

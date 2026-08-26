@@ -1,0 +1,237 @@
+/*==================================================
+        AUTH PAGES (ورود / ثبت‌نام / تأیید ایمیل / فراموشی رمز /
+        حساب کاربری)
+
+        فیچر جدیده، صفحه‌ی معادلی تو سایت قدیمی نداشت - از
+        کلاس‌های عمومی موجود (checkout-box, checkout-form,
+        field-error, checkout-btn) استفاده می‌کنه تا هم‌ظاهر با
+        بقیه‌ی سایت باشه، فقط یه wrapper برای وسط‌چین/محدودکردن
+        عرض کارت لازم بود.
+==================================================*/
+
+.auth-page{
+
+padding:60px 0 100px;
+
+}
+
+.auth-card-wrap{
+
+max-width:480px;
+
+margin:0 auto;
+
+}
+
+.auth-card-wrap .checkout-box{
+
+display:flex;
+
+flex-direction:column;
+
+gap:22px;
+
+}
+
+.auth-card-wrap h1{
+
+font-size:22px;
+
+font-weight:800;
+
+color:var(--primary);
+
+text-align:center;
+
+}
+
+.auth-subtext{
+
+color:var(--secondary);
+
+text-align:center;
+
+font-size:14px;
+
+line-height:1.9;
+
+margin-top:-10px;
+
+}
+
+.auth-links{
+
+display:flex;
+
+justify-content:space-between;
+
+font-size:13px;
+
+color:var(--secondary);
+
+}
+
+.auth-links a{
+
+color:var(--primary);
+
+font-weight:600;
+
+}
+
+.auth-error{
+
+background:#fff2f2;
+
+border:1px solid #ffd6d6;
+
+color:#c0392b;
+
+border-radius:10px;
+
+padding:12px 16px;
+
+font-size:14px;
+
+text-align:center;
+
+}
+
+.auth-success{
+
+background:#f2fbf4;
+
+border:1px solid #cdeed4;
+
+color:#1e8a4c;
+
+border-radius:10px;
+
+padding:12px 16px;
+
+font-size:14px;
+
+text-align:center;
+
+}
+
+.verify-code-input{
+
+text-align:center;
+
+font-size:24px;
+
+letter-spacing:8px;
+
+font-weight:700;
+
+}
+
+
+/*==================================================
+        ACCOUNT PAGE
+==================================================*/
+
+.account-layout{
+
+display:grid;
+
+grid-template-columns:260px 1fr;
+
+gap:32px;
+
+align-items:start;
+
+}
+
+@media (max-width:768px){
+
+.account-layout{
+
+grid-template-columns:1fr;
+
+}
+
+}
+
+.account-profile-box{
+
+background:#fff;
+
+border:1px solid var(--border);
+
+border-radius:16px;
+
+padding:26px;
+
+}
+
+.account-profile-box h3{
+
+font-size:16px;
+
+font-weight:800;
+
+color:var(--primary);
+
+margin-bottom:18px;
+
+}
+
+.account-profile-box .account-field{
+
+margin-bottom:14px;
+
+}
+
+.account-profile-box .account-field label{
+
+display:block;
+
+font-size:12px;
+
+color:var(--secondary);
+
+margin-bottom:4px;
+
+}
+
+.account-logout-btn{
+
+width:100%;
+
+margin-top:10px;
+
+padding:12px;
+
+border-radius:10px;
+
+border:1px solid var(--border);
+
+background:#fff;
+
+color:#c0392b;
+
+font-weight:700;
+
+cursor:pointer;
+
+transition:var(--transition);
+
+}
+
+.account-logout-btn:hover{
+
+background:#fff2f2;
+
+}
+
+.account-orders-empty{
+
+text-align:center;
+
+padding:60px 20px;
+
+color:var(--secondary);
+
+}

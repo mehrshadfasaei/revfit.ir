@@ -77,6 +77,8 @@ class Order(Base):
     id = Column(Integer, primary_key=True, index=True)
     order_number = Column(String, unique=True, index=True, nullable=False)
 
+    customer_id = Column(Integer, ForeignKey("customers.id"), nullable=True)  # null = سفارش مهمان (بدون حساب)
+
     full_name = Column(String, nullable=False)
     phone = Column(String, nullable=False)
     province = Column(String, nullable=False)
@@ -158,6 +160,77 @@ class LoginAttempt(Base):
     lockout_count = Column(Integer, default=0)     # چندمین بار قفل شده (برای تعیین مدت زمان بعدی)
     locked_until = Column(DateTime, nullable=True)
     updated_at = Column(DateTime, default=datetime.utcnow)
+
+
+class AuthAttempt(Base):
+    """نسخه‌ی عمومی‌شده‌ی LoginAttempt بالا - برای ثبت‌نام/ورود/فراموشی
+    رمز مشتری‌ها. برخلاف LoginAttempt (که فقط بر اساس IP بود)،
+    اینجا `key` می‌تونه بر اساس IP یا ایمیل باشه (مثلاً
+    "login:ip:1.2.3.4" یا "login:email:foo@bar.com") تا هم جلوی
+    brute-force از یه IP خاص گرفته بشه هم جلوی حدس زدن رمز یه
+    ایمیل خاص از IP های مختلف. همون الگوریتم قفل تدریجی
+    (get_lockout_minutes توی main.py) رو به اشتراک می‌ذاره."""
+
+    __tablename__ = "auth_attempts"
+
+    id = Column(Integer, primary_key=True, index=True)
+    key = Column(String, nullable=False, unique=True, index=True)
+    failed_count = Column(Integer, default=0)
+    lockout_count = Column(Integer, default=0)
+    locked_until = Column(DateTime, nullable=True)
+    updated_at = Column(DateTime, default=datetime.utcnow)
+
+
+class Customer(Base):
+    """حساب کاربری مشتری - جدا از پنل ادمین (که فقط یه رمز مشترکه)."""
+
+    __tablename__ = "customers"
+
+    id = Column(Integer, primary_key=True, index=True)
+    email = Column(String, unique=True, index=True, nullable=False)
+    password_hash = Column(String, nullable=False)
+    full_name = Column(String, nullable=False)
+    phone = Column(String, nullable=False)
+    email_verified = Column(Boolean, default=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    sessions = relationship("CustomerSession", back_populates="customer", cascade="all, delete-orphan")
+
+
+class CustomerSession(Base):
+    """هر ردیف یعنی یه refresh token فعال (یا قبلاً فعال). خودِ
+    توکن خام هرگز اینجا ذخیره نمی‌شه - فقط هش (sha256) اش، تا
+    حتی اگه دیتابیس لو بره، نشست‌های فعال قابل جعل نباشن.
+
+    id همون jti (شناسه‌ی یکتای توکن) هست که توی کوکی هم می‌ره."""
+
+    __tablename__ = "customer_sessions"
+
+    id = Column(String, primary_key=True, index=True)   # uuid
+    customer_id = Column(Integer, ForeignKey("customers.id"), nullable=False)
+    token_hash = Column(String, nullable=False, index=True)
+    user_agent = Column(String, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    expires_at = Column(DateTime, nullable=False)
+    revoked_at = Column(DateTime, nullable=True)
+
+    customer = relationship("Customer", back_populates="sessions")
+
+
+class VerificationCode(Base):
+    """کد ۶ رقمی ثبت‌نام/فراموشی رمز - فقط هش (sha256) کد ذخیره
+    می‌شه، نه خودِ کد. `attempts` جلوی حدس‌زدن با امتحان‌های
+    پشت‌سرهم رو می‌گیره (بعد از چند تلاش غلط، کد باطل می‌شه)."""
+
+    __tablename__ = "verification_codes"
+
+    id = Column(Integer, primary_key=True, index=True)
+    email = Column(String, nullable=False, index=True)
+    code_hash = Column(String, nullable=False)
+    purpose = Column(String, nullable=False)   # "register" | "reset_password"
+    attempts = Column(Integer, default=0)
+    expires_at = Column(DateTime, nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
 
 
 class StoredImage(Base):

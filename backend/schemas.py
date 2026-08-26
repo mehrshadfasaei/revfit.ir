@@ -176,3 +176,61 @@ class ContactMessageOut(BaseModel):
 
     class Config:
         orm_mode = True
+
+
+# ---------------------------------------------------------
+#   حساب کاربری مشتری
+# ---------------------------------------------------------
+
+EMAIL_PATTERN = r"^[^@\s]+@[^@\s]+\.[^@\s]+$"
+
+
+class CustomerRegister(BaseModel):
+    email: str = Field(..., max_length=200, pattern=EMAIL_PATTERN)
+    password: str = Field(..., min_length=8, max_length=100)
+    fullName: str = Field(..., max_length=100)
+    phone: str = Field(..., max_length=20)
+
+
+class VerifyEmailRequest(BaseModel):
+    email: str = Field(..., max_length=200, pattern=EMAIL_PATTERN)
+    code: str = Field(..., min_length=6, max_length=6)
+
+
+class ResendCodeRequest(BaseModel):
+    email: str = Field(..., max_length=200, pattern=EMAIL_PATTERN)
+
+
+class CustomerLogin(BaseModel):
+    email: str = Field(..., max_length=200, pattern=EMAIL_PATTERN)
+    password: str = Field(..., max_length=100)
+
+
+class ForgotPasswordRequest(BaseModel):
+    email: str = Field(..., max_length=200, pattern=EMAIL_PATTERN)
+
+
+class ResetPasswordRequest(BaseModel):
+    email: str = Field(..., max_length=200, pattern=EMAIL_PATTERN)
+    code: str = Field(..., min_length=6, max_length=6)
+    newPassword: str = Field(..., min_length=8, max_length=100)
+
+
+class CustomerOut(BaseModel):
+    id: int
+    email: str
+    full_name: str
+    phone: str
+
+    class Config:
+        orm_mode = True
+
+
+class AuthTokenOut(BaseModel):
+    accessToken: str
+    customer: CustomerOut
+
+
+class CustomerUpdate(BaseModel):
+    fullName: Optional[str] = Field(None, max_length=100)
+    phone: Optional[str] = Field(None, max_length=20)

@@ -1,4 +1,5 @@
 import { NavLink } from "react-router-dom";
+import { useAuth } from "../../context/AuthContext";
 
 const navActiveClass = ({ isActive }) => (isActive ? "active-link" : undefined);
 
@@ -14,6 +15,8 @@ const navActiveClass = ({ isActive }) => (isActive ? "active-link" : undefined);
  * (قبلاً فقط توی wishlist.html بود).
  */
 export default function MobileMenu({ open, onClose, onOpenSearch, cartCount }) {
+    const { isLoggedIn } = useAuth();
+
     return (
         <ul className={`nav-links${open ? " active" : ""}`}>
             <li className="mobile-menu-header">
@@ -57,6 +60,12 @@ export default function MobileMenu({ open, onClose, onOpenSearch, cartCount }) {
             <li className="mobile-menu-link">
                 <NavLink to="/wishlist" onClick={onClose}>
                     <i className="fa-regular fa-heart"></i> علاقه‌مندی‌ها
+                </NavLink>
+            </li>
+
+            <li className="mobile-menu-link">
+                <NavLink to={isLoggedIn ? "/account" : "/login"} onClick={onClose}>
+                    <i className="fa-regular fa-user"></i> {isLoggedIn ? "حساب کاربری" : "ورود / ثبت‌نام"}
                 </NavLink>
             </li>
 
