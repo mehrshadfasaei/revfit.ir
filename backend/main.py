@@ -16,6 +16,11 @@ import uuid
 import html
 import io
 import logging
+import hmac
+import hashlib
+import base64
+import json
+import time
 from datetime import datetime, timedelta
 from pathlib import Path
 
@@ -301,10 +306,63 @@ def check_admin_password(submitted_password: str) -> bool:
         return False
 
 
+# ---------------------------------------------------------
+#   ADMIN SESSION TOKEN (به‌جای برگردوندن خودِ رمز عبور)
+
+#   قبلاً موقع لاگین، خودِ رمزی که کاربر تایپ کرده بود به‌عنوان
+#   "کلید" برمی‌گشت و همیشگی معتبر بود - یعنی اگه یه‌جا (مثلاً
+#   localStorage مرورگر، از طریق XSS یا بدافزار) لو می‌رفت، رمز
+#   واقعی حساب لو رفته بود، برای همیشه.
+#
+#   حالا به‌جاش یه توکن امضاشده (HMAC-SHA256) با تاریخ انقضا
+#   می‌سازیم. حتی اگه این توکن لو بره، فقط تا چند ساعت معتبره و
+#   رمز واقعی توش نیست. برای امضا از یه کلید مخفی سمت سرور
+#   استفاده می‌شه (ترجیحاً ADMIN_SESSION_SECRET جدا، وگرنه از
+#   روی خودِ هَش رمز مشتق می‌شه - چیزی که کاربر نهایی هیچ‌وقت
+#   نمی‌بینتش).
+# ---------------------------------------------------------
+
+ADMIN_SESSION_SECRET = os.environ.get("ADMIN_SESSION_SECRET") or hashlib.sha256(
+    ADMIN_PASSWORD_HASH.encode()
+).hexdigest()
+
+ADMIN_SESSION_TTL_SECONDS = 8 * 60 * 60  # ۸ ساعت؛ بعدش باید دوباره لاگین کنی
+
+
+def _b64url_encode(data: bytes) -> str:
+    return base64.urlsafe_b64encode(data).rstrip(b"=").decode()
+
+
+def _b64url_decode(data: str) -> bytes:
+    padding = "=" * (-len(data) % 4)
+    return base64.urlsafe_b64decode(data + padding)
+
+
+def create_admin_token() -> str:
+    payload_bytes = json.dumps({"exp": time.time() + ADMIN_SESSION_TTL_SECONDS}).encode()
+    payload_b64 = _b64url_encode(payload_bytes)
+    signature = hmac.new(ADMIN_SESSION_SECRET.encode(), payload_b64.encode(), hashlib.sha256).hexdigest()
+    return f"{payload_b64}.{signature}"
+
+
+def verify_admin_token(token: str) -> bool:
+    try:
+        payload_b64, signature = token.split(".", 1)
+        expected_signature = hmac.new(ADMIN_SESSION_SECRET.encode(), payload_b64.encode(), hashlib.sha256).hexdigest()
+
+        if not hmac.compare_digest(signature, expected_signature):
+            return False
+
+        payload = json.loads(_b64url_decode(payload_b64))
+        return payload.get("exp", 0) > time.time()
+    except Exception:
+        return False
+
+
 def verify_admin(request: Request, x_admin_key: str = Header(default=None)):
-    if not x_admin_key or not check_admin_password(x_admin_key):
+    if not x_admin_key or not verify_admin_token(x_admin_key):
         security_logger.info(f"تلاش ناموفق دسترسی ادمین از IP {get_real_ip(request)}")
-        raise HTTPException(status_code=401, detail="دسترسی نداری - رمز ادمین اشتباهه")
+        raise HTTPException(status_code=401, detail="نشست منقضی شده - لطفاً دوباره وارد شو")
     return True
 
 
@@ -353,7 +411,7 @@ def admin_login(request: Request, payload: dict, db: Session = Depends(get_db)):
         db.commit()
 
         security_logger.info(f"لاگین موفق ادمین از IP {ip}")
-        return {"key": submitted}
+        return {"key": create_admin_token()}
 
     # رمز اشتباه بود
     attempt.failed_count += 1
