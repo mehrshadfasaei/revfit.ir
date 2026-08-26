@@ -14,6 +14,12 @@ import Shipping from "./routes/Shipping";
 import Terms from "./routes/Terms";
 import TrackOrder from "./routes/TrackOrder";
 import Wishlist from "./routes/Wishlist";
+import Login from "./routes/Login";
+import Register from "./routes/Register";
+import VerifyEmail from "./routes/VerifyEmail";
+import ForgotPassword from "./routes/ForgotPassword";
+import ResetPassword from "./routes/ResetPassword";
+import Account from "./routes/Account";
 
 function App() {
     return (
@@ -33,6 +39,12 @@ function App() {
                 <Route path="/terms" element={<Terms />} />
                 <Route path="/track-order" element={<TrackOrder />} />
                 <Route path="/wishlist" element={<Wishlist />} />
+                <Route path="/login" element={<Login />} />
+                <Route path="/register" element={<Register />} />
+                <Route path="/verify-email" element={<VerifyEmail />} />
+                <Route path="/forgot-password" element={<ForgotPassword />} />
+                <Route path="/reset-password" element={<ResetPassword />} />
+                <Route path="/account" element={<Account />} />
             </Route>
         </Routes>
     );

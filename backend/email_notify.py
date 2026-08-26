@@ -97,3 +97,63 @@ def send_new_order_email(order) -> bool:
         print(f"⚠️  ارسال ایمیل سفارش با خطا مواجه شد: {e}")
         return False
 
+
+def send_verification_email(to_email: str, code: str, purpose: str) -> bool:
+    """
+    کد ۶ رقمی ثبت‌نام یا فراموشی رمز رو برای خودِ مشتری می‌فرسته
+    (برخلاف send_new_order_email که همیشه برای OWNER_EMAIL می‌رفت).
+    فقط به BREVO_API_KEY و SENDER_EMAIL نیاز داره (نه OWNER_EMAIL،
+    چون گیرنده اینجا مشتریه نه صاحب فروشگاه).
+
+    مثل تابع بالا، اگه چیزی fail بشه یا متغیرها ست نشده باشن،
+    فقط False برمی‌گردونه - خطا throw نمی‌کنه تا جریان ثبت‌نام/
+    فراموشی رمز رو خراب نکنه.
+    """
+
+    if not (BREVO_API_KEY and SENDER_EMAIL):
+        print("⚠️  متغیرهای BREVO_API_KEY / SENDER_EMAIL ست نشدن؛ ایمیل تأیید ارسال نشد.")
+        return False
+
+    title = "تأیید ایمیل" if purpose == "register" else "بازیابی رمز عبور"
+    intro = (
+        "برای تکمیل ثبت‌نام، این کد رو وارد کن:"
+        if purpose == "register"
+        else "برای بازیابی رمز عبورت، این کد رو وارد کن:"
+    )
+
+    html_body = f"""
+    <div style="font-family:Tahoma,Arial,sans-serif;direction:rtl;text-align:right;line-height:1.8;">
+        <h2>{title}</h2>
+        <p>{intro}</p>
+        <p style="font-size:28px;font-weight:bold;letter-spacing:4px;">{code}</p>
+        <p style="color:#888;font-size:13px;">این کد تا ۱۰ دقیقه‌ی دیگه معتبره. اگه خودت این درخواست رو نداده بودی، این ایمیل رو نادیده بگیر.</p>
+    </div>
+    """
+
+    try:
+        response = requests.post(
+            "https://api.brevo.com/v3/smtp/email",
+            headers={
+                "api-key": BREVO_API_KEY,
+                "Content-Type": "application/json",
+                "Accept": "application/json",
+            },
+            json={
+                "sender": {"email": SENDER_EMAIL, "name": "RevFit"},
+                "to": [{"email": to_email}],
+                "subject": f"کد تأیید RevFit: {code}",
+                "htmlContent": html_body,
+            },
+            timeout=10,
+        )
+
+        if response.status_code in (200, 201):
+            return True
+
+        print(f"⚠️  خطا در ارسال ایمیل تأیید: {response.status_code} - {response.text}")
+        return False
+
+    except Exception as e:
+        print(f"⚠️  ارسال ایمیل تأیید با خطا مواجه شد: {e}")
+        return False
+

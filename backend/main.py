@@ -15,7 +15,6 @@ import string
 import uuid
 import html
 import io
-import logging
 import hmac
 import hashlib
 import base64
@@ -37,10 +36,12 @@ from slowapi.errors import RateLimitExceeded
 from PIL import Image
 
 from database import Base, engine, get_db, IS_SQLITE
+from security_utils import get_real_ip, security_logger, get_lockout_minutes
 import models
 import schemas
 import sms
 import email_notify
+import auth as customer_auth
 
 # متغیرهای محیطی رو از فایل .env (کنار همین main.py) می‌خونه.
 # روی هاست واقعی (لیارا و امثالش)، این متغیرها معمولاً از
@@ -160,25 +161,6 @@ app.mount("/images", StaticFiles(directory=IMAGES_DIR_FOR_MOUNT), name="images")
 #   RATE LIMITING (جلوگیری از Brute Force و اسپم درخواست)
 # ---------------------------------------------------------
 
-def get_real_ip(request: Request) -> str:
-    """Render (مثل بیشتر هاست‌های ابری) درخواست‌ها رو از پشت یه
-    پروکسی رد می‌کنه؛ یعنی request.client.host ممکنه IP خودِ
-    پروکسی رو بده، نه IP واقعی بازدیدکننده - که برای همه یکسانه
-    و کل سیستم Rate Limit/قفل لاگین رو بی‌اثر می‌کنه. به‌جاش از
-    هدر X-Forwarded-For استفاده می‌کنیم.
-
-    نکته‌ی مهم امنیتی: این هدر می‌تونه چندتا IP با کاما جدا داشته
-    باشه. مقدار اول همیشه چیزیه که خودِ کلاینت (مرورگر/اسکریپت)
-    می‌تونه دستی بفرسته - یعنی قابل جعله! پروکسی مطمئن (Render)
-    IP واقعی رو به‌عنوان آخرین مقدار زنجیره اضافه می‌کنه، پس باید
-    همیشه آخرین مقدار رو بخونیم، نه اولی."""
-
-    forwarded = request.headers.get("x-forwarded-for")
-    if forwarded:
-        return forwarded.split(",")[-1].strip()
-    return request.client.host if request.client else "unknown"
-
-
 limiter = Limiter(key_func=get_real_ip)
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
@@ -261,6 +243,9 @@ app.add_middleware(
     allow_origins=allowed_origins,
     allow_methods=["*"],
     allow_headers=["*"],
+    # لازم برای کوکی httpOnly رفرش‌توکن حساب کاربری مشتری‌ها (cross-origin).
+    # چون allow_origins یه لیست مشخصه (نه "*")، امن باقی می‌مونه.
+    allow_credentials=True,
 )
 
 
@@ -290,14 +275,6 @@ if not ADMIN_PASSWORD_HASH:
         "ADMIN_PASSWORD_HASH ست نشده! برای امنیت، بدون این متغیر بک‌اند اجرا نمی‌شه. "
         "با hash_password.py یه رمز بساز و توی .env یا Environment Variables هاست قرارش بده."
     )
-
-# لاگ تلاش‌های ناموفق لاگین (فایل security.log کنار همین main.py)
-security_logger = logging.getLogger("security")
-security_logger.setLevel(logging.INFO)
-_log_handler = logging.FileHandler(Path(__file__).resolve().parent / "security.log", encoding="utf-8")
-_log_handler.setFormatter(logging.Formatter("%(asctime)s | %(message)s"))
-security_logger.addHandler(_log_handler)
-
 
 def check_admin_password(submitted_password: str) -> bool:
     try:
@@ -364,15 +341,6 @@ def verify_admin(request: Request, x_admin_key: str = Header(default=None)):
         security_logger.info(f"تلاش ناموفق دسترسی ادمین از IP {get_real_ip(request)}")
         raise HTTPException(status_code=401, detail="نشست منقضی شده - لطفاً دوباره وارد شو")
     return True
-
-
-# مدت زمان قفل (به دقیقه) بر اساس چندمین‌بار قفل‌شدنه - هر دور طولانی‌تر می‌شه
-LOCKOUT_DURATIONS_MINUTES = [3, 5, 10, 20, 40, 60]
-
-
-def get_lockout_minutes(lockout_count: int) -> int:
-    index = min(lockout_count - 1, len(LOCKOUT_DURATIONS_MINUTES) - 1)
-    return LOCKOUT_DURATIONS_MINUTES[max(index, 0)]
 
 
 @app.post("/api/admin/login")
@@ -974,7 +942,12 @@ def generate_order_number():
 
 @app.post("/api/orders", response_model=schemas.OrderOut)
 @limiter.limit("10/minute")
-def create_order(request: Request, order: schemas.OrderCreate, db: Session = Depends(get_db)):
+def create_order(
+    request: Request,
+    order: schemas.OrderCreate,
+    db: Session = Depends(get_db),
+    current_customer: models.Customer = Depends(customer_auth.get_optional_customer),
+):
     if order.website:
         # فیلد Honeypot پر شده - یعنی احتمالاً یه ربات فرم رو پر کرده، نه آدم
         security_logger.info(f"سفارش مشکوک به ربات از IP {get_real_ip(request)}")
@@ -1051,6 +1024,7 @@ def create_order(request: Request, order: schemas.OrderCreate, db: Session = Dep
 
     db_order = models.Order(
         order_number=generate_order_number(),
+        customer_id=current_customer.id if current_customer else None,
         full_name=sanitize_text(order.fullName),
         phone=sanitize_text(order.phone),
         province=sanitize_text(order.province),
@@ -1125,3 +1099,327 @@ def get_order(request: Request, order_number: str, phone: str, db: Session = Dep
         raise HTTPException(status_code=404, detail="سفارشی با این مشخصات پیدا نشد")
 
     return order
+
+
+# ---------------------------------------------------------
+#   حساب کاربری مشتری (ثبت‌نام / ورود / پروفایل / تاریخچه‌ی سفارش)
+
+#   جزئیات معماری امنیتی توی backend/auth.py توضیح داده شده.
+#   خلاصه: access token کوتاه‌مدت (۱۵ دقیقه، تو بدنه‌ی جواب)،
+#   refresh token بلندمدت (۳۰ روز، فقط تو یه کوکی httpOnly که
+#   جاوااسکریپت اصلاً بهش دسترسی نداره، و rotate می‌شه هر بار
+#   استفاده بشه).
+# ---------------------------------------------------------
+
+def _issue_customer_session(db: Session, response: Response, customer: models.Customer, request: Request) -> dict:
+    """بعد از تأیید ایمیل/ورود موفق/رفرش، یه access token جدید +
+    یه refresh token جدید (rotate) صادر می‌کنه."""
+
+    access_token = customer_auth.create_access_token(customer.id)
+
+    raw_refresh = customer_auth.create_refresh_token_value()
+    db.add(models.CustomerSession(
+        id=str(uuid.uuid4()),
+        customer_id=customer.id,
+        token_hash=customer_auth.hash_token(raw_refresh),
+        user_agent=request.headers.get("user-agent"),
+        expires_at=customer_auth.refresh_token_expiry(),
+    ))
+    db.commit()
+
+    response.set_cookie(
+        key="refresh_token",
+        value=raw_refresh,
+        max_age=customer_auth.REFRESH_TOKEN_TTL_DAYS * 24 * 3600,
+        httponly=True,
+        secure=True,
+        samesite="none",
+        path="/api/auth",
+    )
+
+    return {"accessToken": access_token, "customer": customer}
+
+
+def _issue_verification_code(db: Session, email: str, purpose: str):
+    """کدهای قبلی همون ایمیل/purpose رو بی‌اثر می‌کنه (فقط آخرین
+    کد معتبره) و یه کد جدید می‌سازه و ایمیل می‌کنه."""
+
+    db.query(models.VerificationCode).filter(
+        models.VerificationCode.email == email,
+        models.VerificationCode.purpose == purpose,
+    ).delete()
+
+    code = customer_auth.generate_verification_code()
+    db.add(models.VerificationCode(
+        email=email,
+        code_hash=customer_auth.hash_code(code),
+        purpose=purpose,
+        expires_at=customer_auth.verification_code_expiry(),
+    ))
+    db.commit()
+
+    try:
+        email_notify.send_verification_email(email, code, purpose)
+    except Exception as e:
+        print(f"⚠️  ارسال ایمیل کد تأیید با خطا مواجه شد: {e}")
+
+
+@app.post("/api/auth/register")
+@limiter.limit("5/minute")
+def register_customer(request: Request, payload: schemas.CustomerRegister, db: Session = Depends(get_db)):
+    email = payload.email.lower()
+
+    if not customer_auth.is_password_strong_enough(payload.password):
+        raise HTTPException(status_code=400, detail="رمز عبور باید حداقل ۸ کاراکتر باشه و فقط عدد نباشه.")
+
+    existing = db.query(models.Customer).filter(models.Customer.email == email).first()
+
+    if existing and existing.email_verified:
+        raise HTTPException(status_code=400, detail="این ایمیل قبلاً ثبت شده. اگه حسابته، وارد شو.")
+
+    if existing:
+        # حساب هست ولی ایمیلش هنوز تأیید نشده - اطلاعات/رمز رو آپدیت و کد جدید بفرست
+        existing.password_hash = customer_auth.hash_password(payload.password)
+        existing.full_name = sanitize_text(payload.fullName)
+        existing.phone = sanitize_text(payload.phone)
+    else:
+        db.add(models.Customer(
+            email=email,
+            password_hash=customer_auth.hash_password(payload.password),
+            full_name=sanitize_text(payload.fullName),
+            phone=sanitize_text(payload.phone),
+            email_verified=False,
+        ))
+
+    db.commit()
+
+    _issue_verification_code(db, email, purpose="register")
+
+    return {"message": "کد تأیید به ایمیلت ارسال شد."}
+
+
+@app.post("/api/auth/resend-code")
+@limiter.limit("3/minute")
+def resend_verification_code(request: Request, payload: schemas.ResendCodeRequest, db: Session = Depends(get_db)):
+    email = payload.email.lower()
+    customer = db.query(models.Customer).filter(models.Customer.email == email).first()
+
+    if customer and not customer.email_verified:
+        _issue_verification_code(db, email, purpose="register")
+
+    # پیام یکسان چه حسابی در انتظار تأیید باشه چه نه
+    return {"message": "اگه حسابی با این ایمیل در انتظار تأیید باشه، کد جدید ارسال شد."}
+
+
+@app.post("/api/auth/verify-email", response_model=schemas.AuthTokenOut)
+@limiter.limit("10/minute")
+def verify_email(request: Request, response: Response, payload: schemas.VerifyEmailRequest, db: Session = Depends(get_db)):
+    email = payload.email.lower()
+
+    customer = db.query(models.Customer).filter(models.Customer.email == email).first()
+
+    code_row = db.query(models.VerificationCode).filter(
+        models.VerificationCode.email == email,
+        models.VerificationCode.purpose == "register",
+    ).order_by(models.VerificationCode.created_at.desc()).first()
+
+    if not customer or not code_row or code_row.expires_at < datetime.utcnow() or code_row.attempts >= 5:
+        raise HTTPException(status_code=400, detail="کد نامعتبره یا منقضی شده")
+
+    if not hmac.compare_digest(customer_auth.hash_code(payload.code), code_row.code_hash):
+        code_row.attempts += 1
+        db.commit()
+        raise HTTPException(status_code=400, detail="کد اشتباهه")
+
+    customer.email_verified = True
+    db.delete(code_row)
+
+    # سفارش‌های مهمانی که قبلاً با همین شماره تماس ثبت شده بودن، خودکار به این حساب وصل می‌شن
+    db.query(models.Order).filter(
+        models.Order.phone == customer.phone,
+        models.Order.customer_id.is_(None),
+    ).update({"customer_id": customer.id})
+
+    db.commit()
+
+    security_logger.info(f"ثبت‌نام و تأیید ایمیل موفق: {email}")
+
+    return _issue_customer_session(db, response, customer, request)
+
+
+@app.post("/api/auth/login", response_model=schemas.AuthTokenOut)
+@limiter.limit("10/minute")
+def login_customer(request: Request, response: Response, payload: schemas.CustomerLogin, db: Session = Depends(get_db)):
+    email = payload.email.lower()
+    ip_key = f"login:ip:{get_real_ip(request)}"
+    email_key = f"login:email:{email}"
+
+    for key in (ip_key, email_key):
+        locked, retry_after = customer_auth.check_lockout(db, key)
+        if locked:
+            remaining_minutes = max(1, retry_after // 60 + (1 if retry_after % 60 else 0))
+            security_logger.info(f"تلاش ورود مشتری در حین قفل‌بودن ({key})")
+            raise HTTPException(status_code=429, detail={
+                "message": f"به‌خاطر تلاش‌های ناموفق زیاد، فعلاً قفله. حدود {remaining_minutes} دقیقه‌ی دیگه دوباره امتحان کن.",
+                "retryAfterSeconds": retry_after,
+            })
+
+    customer = db.query(models.Customer).filter(models.Customer.email == email).first()
+
+    # عمداً یه پیام یکسان برای «ایمیل نیست»/«رمز غلط»/«تأیید نشده» -
+    # تا کسی نتونه با آزمون‌وخطا بفهمه کدوم ایمیل‌ها تو سیستم ثبت‌نامن
+    if not customer or not customer.email_verified or not customer_auth.check_password(payload.password, customer.password_hash):
+        lockout_minutes = customer_auth.record_failed_attempt(db, ip_key)
+        customer_auth.record_failed_attempt(db, email_key)
+        security_logger.info(f"ورود ناموفق مشتری از IP {get_real_ip(request)} برای {email}")
+
+        if lockout_minutes:
+            raise HTTPException(status_code=429, detail={
+                "message": f"چند بار اطلاعات اشتباه وارد کردی. برای {lockout_minutes} دقیقه قفل شدی.",
+                "retryAfterSeconds": lockout_minutes * 60,
+            })
+
+        raise HTTPException(status_code=401, detail="ایمیل یا رمز عبور اشتباهه")
+
+    customer_auth.reset_attempts(db, ip_key)
+    customer_auth.reset_attempts(db, email_key)
+    security_logger.info(f"ورود موفق مشتری {email} از IP {get_real_ip(request)}")
+
+    return _issue_customer_session(db, response, customer, request)
+
+
+@app.post("/api/auth/refresh", response_model=schemas.AuthTokenOut, dependencies=[Depends(customer_auth.require_csrf_header)])
+def refresh_session(request: Request, response: Response, db: Session = Depends(get_db)):
+    raw_refresh = request.cookies.get("refresh_token")
+    if not raw_refresh:
+        raise HTTPException(status_code=401, detail="نشست پیدا نشد")
+
+    token_hash = customer_auth.hash_token(raw_refresh)
+    session = db.query(models.CustomerSession).filter(models.CustomerSession.token_hash == token_hash).first()
+
+    if not session or session.revoked_at or session.expires_at < datetime.utcnow():
+        if session and session.revoked_at:
+            # یه refresh token باطل‌شده دوباره استفاده شده - یعنی احتمالاً
+            # دزدیده شده؛ برای احتیاط همه‌ی نشست‌های همین مشتری رو باطل کن
+            db.query(models.CustomerSession).filter(
+                models.CustomerSession.customer_id == session.customer_id,
+                models.CustomerSession.revoked_at.is_(None),
+            ).update({"revoked_at": datetime.utcnow()})
+            db.commit()
+            security_logger.info(f"احتمال سرقت refresh token - نشست‌های مشتری {session.customer_id} باطل شدن")
+
+        response.delete_cookie(key="refresh_token", path="/api/auth")
+        raise HTTPException(status_code=401, detail="نشست منقضی شده - دوباره وارد شو")
+
+    customer = db.query(models.Customer).filter(models.Customer.id == session.customer_id).first()
+    if not customer:
+        raise HTTPException(status_code=401, detail="حساب کاربری پیدا نشد")
+
+    session.revoked_at = datetime.utcnow()  # rotate: این‌یکی باطل، یه توکن جدید صادر می‌شه
+    db.commit()
+
+    return _issue_customer_session(db, response, customer, request)
+
+
+@app.post("/api/auth/logout", dependencies=[Depends(customer_auth.require_csrf_header)])
+def logout_customer(request: Request, response: Response, db: Session = Depends(get_db)):
+    raw_refresh = request.cookies.get("refresh_token")
+
+    if raw_refresh:
+        token_hash = customer_auth.hash_token(raw_refresh)
+        session = db.query(models.CustomerSession).filter(models.CustomerSession.token_hash == token_hash).first()
+        if session and not session.revoked_at:
+            session.revoked_at = datetime.utcnow()
+            db.commit()
+
+    response.delete_cookie(key="refresh_token", path="/api/auth")
+    return {"message": "خارج شدی"}
+
+
+@app.post("/api/auth/forgot-password")
+@limiter.limit("3/minute")
+def forgot_password(request: Request, payload: schemas.ForgotPasswordRequest, db: Session = Depends(get_db)):
+    email = payload.email.lower()
+    customer = db.query(models.Customer).filter(
+        models.Customer.email == email,
+        models.Customer.email_verified == True,  # noqa: E712
+    ).first()
+
+    if customer:
+        _issue_verification_code(db, email, purpose="reset_password")
+
+    # پیام یکسان چه ایمیل ثبت‌نام‌شده باشه چه نه
+    return {"message": "اگه حسابی با این ایمیل وجود داشته باشه، کد بازیابی ارسال شد."}
+
+
+@app.post("/api/auth/reset-password")
+@limiter.limit("10/minute")
+def reset_password(request: Request, payload: schemas.ResetPasswordRequest, db: Session = Depends(get_db)):
+    email = payload.email.lower()
+
+    if not customer_auth.is_password_strong_enough(payload.newPassword):
+        raise HTTPException(status_code=400, detail="رمز عبور باید حداقل ۸ کاراکتر باشه و فقط عدد نباشه.")
+
+    customer = db.query(models.Customer).filter(models.Customer.email == email).first()
+
+    code_row = db.query(models.VerificationCode).filter(
+        models.VerificationCode.email == email,
+        models.VerificationCode.purpose == "reset_password",
+    ).order_by(models.VerificationCode.created_at.desc()).first()
+
+    if not customer or not code_row or code_row.expires_at < datetime.utcnow() or code_row.attempts >= 5:
+        raise HTTPException(status_code=400, detail="کد نامعتبره یا منقضی شده")
+
+    if not hmac.compare_digest(customer_auth.hash_code(payload.code), code_row.code_hash):
+        code_row.attempts += 1
+        db.commit()
+        raise HTTPException(status_code=400, detail="کد اشتباهه")
+
+    customer.password_hash = customer_auth.hash_password(payload.newPassword)
+    db.delete(code_row)
+
+    # بعد از عوض‌شدن رمز، همه‌ی نشست‌های فعال باطل بشن (خروج اجباری از همه‌جا)
+    db.query(models.CustomerSession).filter(
+        models.CustomerSession.customer_id == customer.id,
+        models.CustomerSession.revoked_at.is_(None),
+    ).update({"revoked_at": datetime.utcnow()})
+
+    db.commit()
+
+    security_logger.info(f"بازنشانی رمز موفق برای {email}")
+
+    return {"message": "رمز عبورت با موفقیت تغییر کرد."}
+
+
+@app.get("/api/account/me", response_model=schemas.CustomerOut)
+def get_my_account(customer: models.Customer = Depends(customer_auth.get_current_customer)):
+    return customer
+
+
+@app.put("/api/account/me", response_model=schemas.CustomerOut)
+def update_my_account(
+    payload: schemas.CustomerUpdate,
+    customer: models.Customer = Depends(customer_auth.get_current_customer),
+    db: Session = Depends(get_db),
+):
+    if payload.fullName:
+        customer.full_name = sanitize_text(payload.fullName)
+    if payload.phone:
+        customer.phone = sanitize_text(payload.phone)
+
+    db.commit()
+    db.refresh(customer)
+    return customer
+
+
+@app.get("/api/account/orders", response_model=list[schemas.OrderOut])
+def get_my_orders(
+    customer: models.Customer = Depends(customer_auth.get_current_customer),
+    db: Session = Depends(get_db),
+):
+    return (
+        db.query(models.Order)
+        .filter(models.Order.customer_id == customer.id)
+        .order_by(models.Order.created_at.desc())
+        .all()
+    )

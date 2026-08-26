@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link, NavLink } from "react-router-dom";
 import MobileMenu from "./MobileMenu";
 import { useCartBadge } from "../../hooks/useCartBadge";
+import { useAuth } from "../../context/AuthContext";
 
 const navActiveClass = ({ isActive }) => (isActive ? "active-link" : undefined);
 
@@ -9,11 +10,13 @@ const navActiveClass = ({ isActive }) => (isActive ? "active-link" : undefined);
  * پورت‌شده از html/index.html هدر + js/common.js (منوی موبایل،
  * cart badge). تصمیم یکسان‌سازی: آیکون قلب (wishlist) توی
  * nav-icons همه‌جا نشون داده می‌شه (قبلاً فقط توی wishlist.html
- * بود).
+ * بود). آیکون حساب کاربری هم فیچر جدیده - به /account (اگه
+ * لاگین باشی) یا /login (اگه نباشی) می‌ره.
  */
 export default function Header({ onOpenSearch }) {
     const [menuOpen, setMenuOpen] = useState(false);
     const cartCount = useCartBadge();
+    const { isLoggedIn } = useAuth();
 
     return (
         <header className="with-marquee">
@@ -47,6 +50,10 @@ export default function Header({ onOpenSearch }) {
 
                         <NavLink to="/wishlist" className={navActiveClass}>
                             <i className="fa-solid fa-heart"></i>
+                        </NavLink>
+
+                        <NavLink to={isLoggedIn ? "/account" : "/login"} className={navActiveClass} title="حساب کاربری">
+                            <i className="fa-solid fa-user"></i>
                         </NavLink>
 
                         <Link to="/cart" className="cart-icon-link">

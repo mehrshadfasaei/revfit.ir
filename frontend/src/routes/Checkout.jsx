@@ -3,19 +3,25 @@ import { Link, useNavigate } from "react-router-dom";
 import PageBanner from "../components/ui/PageBanner";
 import { getMergedCart, getCartTotals, saveCart } from "../lib/cart";
 import { formatPrice } from "../lib/format";
-import { API_BASE_URL } from "../lib/api";
 import { showToast } from "../lib/toast";
+import { useAuth } from "../context/AuthContext";
 
 /**
- * پورت‌شده از html/checkout.html + js/checkout.js. تفاوت آگاهانه
- * با نسخه‌ی قدیمی: به‌جای جابه‌جایی درجا بین #checkoutFormState و
- * #checkoutSuccessState (که هیچ URL مجزایی نداشت)، بعد از ثبت
- * موفق به مسیر /checkout/success?order=... هدایت می‌کنیم — یه
- * صفحه‌ی تأییدیه‌ی واقعی که رفرش/اشتراک‌گذاری هم خرابش نمی‌کنه.
+ * پورت‌شده از html/checkout.html + js/checkout.js. دو تا تفاوت
+ * آگاهانه با نسخه‌ی قدیمی:
+ * ۱. به‌جای جابه‌جایی درجا بین #checkoutFormState و
+ *    #checkoutSuccessState (که هیچ URL مجزایی نداشت)، بعد از ثبت
+ *    موفق به مسیر /checkout/success?order=... هدایت می‌کنیم.
+ * ۲. اگه کاربر لاگین باشه، از authFetch (که خودکار هدر Authorization
+ *    رو اضافه می‌کنه) استفاده می‌کنیم تا بک‌اند سفارش رو به
+ *    حسابش وصل کنه؛ برای مهمون (بدون accessToken) دقیقاً همون
+ *    fetch ساده‌ی قبلی اتفاق می‌افته - authFetch بدون توکن هیچ
+ *    هدری اضافه نمی‌کنه.
  */
 export default function Checkout() {
     const navigate = useNavigate();
     const formRef = useRef(null);
+    const { customer, authFetch } = useAuth();
     const [cart] = useState(() => getMergedCart());
     const [shippingType, setShippingType] = useState("prepaid");
     const [submitting, setSubmitting] = useState(false);
@@ -99,7 +105,7 @@ export default function Checkout() {
         };
 
         try {
-            const res = await fetch(`${API_BASE_URL}/api/orders`, {
+            const res = await authFetch("/api/orders", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(payload),
@@ -142,11 +148,27 @@ export default function Checkout() {
                                 <div className="form-row">
                                     <label>
                                         نام و نام خانوادگی
-                                        <input type="text" name="fullName" required maxLength={100} placeholder="مثلاً محمد رضایی" className={errClass("fullName")} />
+                                        <input
+                                            type="text"
+                                            name="fullName"
+                                            required
+                                            maxLength={100}
+                                            placeholder="مثلاً محمد رضایی"
+                                            defaultValue={customer?.full_name || ""}
+                                            className={errClass("fullName")}
+                                        />
                                     </label>
                                     <label>
                                         شماره تماس
-                                        <input type="tel" name="phone" required maxLength={11} placeholder="09xxxxxxxxx" className={errClass("phone")} />
+                                        <input
+                                            type="tel"
+                                            name="phone"
+                                            required
+                                            maxLength={11}
+                                            placeholder="09xxxxxxxxx"
+                                            defaultValue={customer?.phone || ""}
+                                            className={errClass("phone")}
+                                        />
                                     </label>
                                 </div>
 

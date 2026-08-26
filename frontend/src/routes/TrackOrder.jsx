@@ -2,23 +2,7 @@ import { useRef, useState } from "react";
 import PageBanner from "../components/ui/PageBanner";
 import { API_BASE_URL } from "../lib/api";
 import { formatPrice } from "../lib/format";
-
-const STATUS_ORDER = ["pending", "paid", "shipped", "delivered"];
-
-const STEPS = [
-    { step: "pending", icon: "fa-file-circle-check", label: "ثبت سفارش" },
-    { step: "paid", icon: "fa-money-check-dollar", label: "در حال پردازش" },
-    { step: "shipped", icon: "fa-truck-fast", label: "ارسال شده" },
-    { step: "delivered", icon: "fa-box-open", label: "تحویل داده شده" },
-];
-
-function formatOrderDate(createdAt) {
-    try {
-        return new Date(createdAt).toLocaleDateString("fa-IR");
-    } catch (err) {
-        return new Date(createdAt).toISOString().slice(0, 10);
-    }
-}
+import { STATUS_ORDER, STATUS_STEPS as STEPS, formatOrderDate } from "../lib/orderStatus";
 
 /**
  * پورت‌شده از html/track-order.html + js/track-order.js.

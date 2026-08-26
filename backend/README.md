@@ -34,6 +34,26 @@ ALLOWED_ORIGINS=http://127.0.0.1:5500,http://localhost:5500
 Environment Variables خود هاست وارد کن (`ALLOWED_ORIGINS` رو اون‌موقع به
 آدرس واقعی فرانت‌اندت عوض کن).
 
+## حساب کاربری مشتری‌ها (ثبت‌نام/ورود/تاریخچه‌ی سفارش)
+
+جدا از پنل ادمین، مشتری‌ها می‌تونن با ایمیل حساب بسازن (`backend/auth.py`
++ endpoint های `/api/auth/*` و `/api/account/*` تو `main.py`). نکات دیپلوی:
+
+- **`AUTH_TOKEN_SECRET` (اختیاری)** — کلید امضای access token مشتری‌ها.
+  مثل `ADMIN_SESSION_SECRET`، اگه ستش نکنی خودکار از روی
+  `ADMIN_PASSWORD_HASH` ساخته می‌شه؛ ترجیحاً یه مقدار جدا و تصادفی
+  براش تو پنل هاست تنظیم کن.
+- **`BREVO_API_KEY` / `SENDER_EMAIL`** — همون متغیرهایی که برای ایمیل
+  اطلاع‌رسانی سفارش استفاده می‌شن، حالا برای ارسال کد تأیید/بازیابی
+  رمز به خودِ مشتری هم لازمن (بدون این‌ها، ثبت‌نام "موفق" می‌شه ولی
+  کد تأیید هیچ‌وقت به دست مشتری نمی‌رسه - `OWNER_EMAIL` لازم نیست).
+- **`allow_credentials=True` تو CORS** از قبل ست شده - چون refresh
+  token تو یه کوکی httpOnly میشینه که باید cross-origin رد و بدل بشه؛
+  یعنی `ALLOWED_ORIGINS` باید همیشه لیست دقیق دامنه‌ها باشه (نه `*`).
+- توضیح کامل معماری امنیتی (چرا access/refresh token جدا، چرا کوکی
+  httpOnly، محافظت CSRF، rotate شدن refresh token) بالای فایل
+  `backend/auth.py` هست.
+
 ## اجرا
 
 ```bash
