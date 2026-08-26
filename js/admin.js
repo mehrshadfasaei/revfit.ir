@@ -56,7 +56,21 @@ async function fetchWithRetry(url, options = {}, retries = 2){
 
     try{
 
-        return await fetch(url, options);
+        const res = await fetch(url, options);
+
+        // اگه این یه درخواست ادمین‌محور بود (هدر X-Admin-Key داشت) و بک‌اند
+        // ۴۰۱ برگردوند، یعنی توکن نشست منقضی شده (هر ۸ ساعت طبیعیه) -
+        // خودکار برگرد به صفحه‌ی لاگین به‌جای این‌که فقط یه خطای گنگ
+        // تو کنسول بمونه.
+        if(res.status === 401 && options.headers && options.headers["X-Admin-Key"]){
+
+            localStorage.removeItem("adminKey");
+
+            if(typeof showLogin === "function") showLogin("نشست شما منقضی شده؛ دوباره وارد شو.");
+
+        }
+
+        return res;
 
     }catch(err){
 
