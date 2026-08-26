@@ -1,0 +1,19 @@
+/*
+  Global stylesheet bundle.
+
+  Loaded once, globally, for every route — not per-page like the old
+  multi-page site did. The import order below matches the exact cascade
+  order the old html/*.html pages used (a page never loaded a later file
+  before an earlier one), so specificity/override behavior is identical
+  to today, just applied everywhere instead of only where a given old
+  page happened to link it in.
+*/
+
+@import "./styles/style.css";
+@import "./styles/products.css";
+@import "./styles/product.css";
+@import "./styles/cart.css";
+@import "./styles/checkout.css";
+@import "./styles/about.css";
+@import "./styles/contact.css";
+@import "./styles/track-order.css";
