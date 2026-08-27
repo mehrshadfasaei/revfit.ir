@@ -8,9 +8,7 @@ const navActiveClass = ({ isActive }) => (isActive ? "active-link" : undefined);
 
 /**
  * پورت‌شده از html/index.html هدر + js/common.js (منوی موبایل،
- * cart badge). تصمیم یکسان‌سازی: آیکون قلب (wishlist) توی
- * nav-icons همه‌جا نشون داده می‌شه (قبلاً فقط توی wishlist.html
- * بود). آیکون حساب کاربری هم فیچر جدیده - به /account (اگه
+ * cart badge). آیکون حساب کاربری فیچر جدیده - به /account (اگه
  * لاگین باشی) یا /login (اگه نباشی) می‌ره.
  */
 export default function Header({ onOpenSearch }) {
@@ -47,10 +45,6 @@ export default function Header({ onOpenSearch }) {
                         >
                             <i className="fa-solid fa-magnifying-glass"></i>
                         </a>
-
-                        <NavLink to="/wishlist" className={navActiveClass}>
-                            <i className="fa-solid fa-heart"></i>
-                        </NavLink>
 
                         <NavLink to={isLoggedIn ? "/account" : "/login"} className={navActiveClass} title="حساب کاربری">
                             <i className="fa-solid fa-user"></i>
