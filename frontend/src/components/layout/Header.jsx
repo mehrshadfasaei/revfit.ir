@@ -7,22 +7,35 @@ import { useAuth } from "../../context/AuthContext";
 /**
  * پورت‌شده از html/index.html هدر + js/common.js (منوی موبایل،
  * cart badge). دکمه‌ی حساب کاربری فیچر جدیده - به /account (اگه
- * لاگین باشی) یا /login (اگه نباشی) می‌ره؛ به‌جای یه آیکون تنها،
- * یه دکمه‌ی مستطیلی با متنه (درخواست کاربر).
+ * لاگین باشی) یا /login (اگه نباشی) می‌ره.
+ *
+ * دو حالت رندر داره (درخواست کاربر): تو دسکتاپ کنار لوگو یه
+ * دکمه‌ی مستطیلی با متنه، تو موبایل همون آیکون تنهاست (مثل قبل
+ * از اضافه‌شدن دکمه) و جاش تو nav-icons می‌مونه. کدوم یکی دیده
+ * می‌شه با CSS (media query) کنترل می‌شه، نه جاوااسکریپت.
  */
 export default function Header({ onOpenSearch }) {
     const [menuOpen, setMenuOpen] = useState(false);
     const cartCount = useCartBadge();
     const { isLoggedIn } = useAuth();
+    const accountTo = isLoggedIn ? "/account" : "/login";
+    const accountLabel = isLoggedIn ? "حساب من" : "ورود";
 
     return (
         <header className="with-marquee">
             <div className="container">
                 <nav>
-                    <div className="logo">
-                        <Link to="/">
-                            <img src="/images/logo1_transparent.png" alt="Logo" />
-                        </Link>
+                    <div className="logo-account-wrap">
+                        <div className="logo">
+                            <Link to="/">
+                                <img src="/images/logo1_transparent.png" alt="Logo" />
+                            </Link>
+                        </div>
+
+                        <NavLink to={accountTo} className="header-account-btn" title="حساب کاربری">
+                            <i className="fa-solid fa-user"></i>
+                            <span>{accountLabel}</span>
+                        </NavLink>
                     </div>
 
                     <MobileMenu
@@ -45,9 +58,8 @@ export default function Header({ onOpenSearch }) {
                             <i className="fa-solid fa-magnifying-glass"></i>
                         </a>
 
-                        <NavLink to={isLoggedIn ? "/account" : "/login"} className="header-account-btn" title="حساب کاربری">
+                        <NavLink to={accountTo} className="header-account-icon-mobile" title="حساب کاربری">
                             <i className="fa-solid fa-user"></i>
-                            <span>{isLoggedIn ? "حساب من" : "ورود"}</span>
                         </NavLink>
 
                         <Link to="/cart" className="cart-icon-link">
