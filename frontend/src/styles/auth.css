@@ -9,6 +9,61 @@
         عرض کارت لازم بود.
 ==================================================*/
 
+/* دکمه‌ی مستطیلی ورود/حساب کاربری تو هدر - به‌جای آیکون تنها */
+.header-account-btn{
+
+display:flex;
+
+align-items:center;
+
+gap:8px;
+
+background:var(--primary);
+
+color:#fff !important;
+
+padding:9px 18px;
+
+border-radius:8px;
+
+font-size:14px;
+
+font-weight:700;
+
+white-space:nowrap;
+
+transition:var(--transition);
+
+}
+
+.header-account-btn:hover{
+
+background:var(--gold);
+
+}
+
+.header-account-btn i{
+
+font-size:14px;
+
+}
+
+@media (max-width:576px){
+
+.header-account-btn span{
+
+display:none;
+
+}
+
+.header-account-btn{
+
+padding:9px 12px;
+
+}
+
+}
+
 .auth-page{
 
 padding:60px 0 100px;
