@@ -13,7 +13,6 @@ import Privacy from "./routes/Privacy";
 import Shipping from "./routes/Shipping";
 import Terms from "./routes/Terms";
 import TrackOrder from "./routes/TrackOrder";
-import Wishlist from "./routes/Wishlist";
 import Login from "./routes/Login";
 import Register from "./routes/Register";
 import VerifyEmail from "./routes/VerifyEmail";
@@ -38,7 +37,6 @@ function App() {
                 <Route path="/shipping" element={<Shipping />} />
                 <Route path="/terms" element={<Terms />} />
                 <Route path="/track-order" element={<TrackOrder />} />
-                <Route path="/wishlist" element={<Wishlist />} />
                 <Route path="/login" element={<Login />} />
                 <Route path="/register" element={<Register />} />
                 <Route path="/verify-email" element={<VerifyEmail />} />

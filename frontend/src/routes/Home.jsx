@@ -4,6 +4,7 @@ import { useProducts } from "../hooks/useProducts";
 import MobileSliderDots, { useMobileItemSlider } from "../components/ui/MobileItemSlider";
 import ProductCard from "../components/ui/ProductCard";
 import { showToast } from "../lib/toast";
+import { useAuth } from "../context/AuthContext";
 
 const SLIDES = [
     {
@@ -96,6 +97,7 @@ export default function Home() {
 
             <CounterSection />
             <InstagramSection />
+            <AccountCta />
             <NewsletterSection />
         </>
     );
@@ -249,6 +251,28 @@ function InstagramSection() {
                     ))}
                 </div>
                 <MobileSliderDots count={INSTAGRAM_IMAGES.length} current={current} onSelect={goTo} />
+            </div>
+        </section>
+    );
+}
+
+/**
+ * دکمه‌ی ورود/ثبت‌نام تو هوم‌پیج - فقط برای بازدیدکننده‌ای که
+ * لاگین نیست نشون داده می‌شه (کسی که لاگینه، آیکون حساب کاربری
+ * رو تو هدر داره، نیازی به بنر تکراری نیست).
+ */
+function AccountCta() {
+    const { isLoggedIn } = useAuth();
+
+    if (isLoggedIn) return null;
+
+    return (
+        <section className="about-cta">
+            <div className="container">
+                <h2>حساب کاربری بساز و سفارش‌هاتو پیگیری کن</h2>
+                <Link to="/login" className="cta-btn">
+                    وارد حساب کاربری شوید
+                </Link>
             </div>
         </section>
     );

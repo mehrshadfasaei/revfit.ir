@@ -10,9 +10,6 @@ const navActiveClass = ({ isActive }) => (isActive ? "active-link" : undefined);
  *
  * پورت‌شده از html/index.html هدر + js/common.js's مدیریت
  * ".menu-btn"/".nav-links.active".
- *
- * تصمیم یکسان‌سازی: آیتم علاقه‌مندی‌ها همه‌جا نشون داده می‌شه
- * (قبلاً فقط توی wishlist.html بود).
  */
 export default function MobileMenu({ open, onClose, onOpenSearch, cartCount }) {
     const { isLoggedIn } = useAuth();
@@ -54,12 +51,6 @@ export default function MobileMenu({ open, onClose, onOpenSearch, cartCount }) {
             <li>
                 <NavLink to="/contact" className={navActiveClass} onClick={onClose}>
                     تماس با ما
-                </NavLink>
-            </li>
-
-            <li className="mobile-menu-link">
-                <NavLink to="/wishlist" onClick={onClose}>
-                    <i className="fa-regular fa-heart"></i> علاقه‌مندی‌ها
                 </NavLink>
             </li>
 

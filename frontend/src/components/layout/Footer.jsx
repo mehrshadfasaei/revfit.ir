@@ -1,9 +1,7 @@
 import { Link } from "react-router-dom";
 
 /**
- * پورت‌شده از html/index.html فوتر. تصمیم یکسان‌سازی: لینک
- * «پیگیری سفارش» همیشه توی ستون پشتیبانی هست (قبلاً توی فوتر
- * wishlist.html جا افتاده بود).
+ * پورت‌شده از html/index.html فوتر.
  */
 export default function Footer() {
     return (

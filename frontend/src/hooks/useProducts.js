@@ -4,7 +4,7 @@ import { getProducts } from "../lib/api";
 /**
  * fetch-on-mount wrapper around lib/api.getProducts — هر جا امروز
  * getProducts() صدا زده می‌شد (renderFeaturedProducts, applyFilters,
- * renderWishlist, ...) با این هوک جایگزین می‌شه.
+ * ...) با این هوک جایگزین می‌شه.
  *
  * عمداً کش/استور مشترک نداره (مثل قبل، هر مصرف‌کننده fetch تازه‌ی
  * خودش رو می‌زنه) — پارامتری برای re-fetch نداریم چون چیزی که
