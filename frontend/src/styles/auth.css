@@ -9,7 +9,21 @@
         عرض کارت لازم بود.
 ==================================================*/
 
-/* دکمه‌ی مستطیلی ورود/حساب کاربری تو هدر - به‌جای آیکون تنها */
+/* کنار لوگو (سمت راست هدر تو حالت RTL) - لوگو + دکمه‌ی حساب کاربری
+   با هم تو یه ردیف. تو نسخه‌ی دسکتاپ دکمه‌ی مستطیلی «ورود»/«حساب
+   من» نشون داده می‌شه؛ تو موبایل این دکمه مخفی می‌شه و به‌جاش
+   همون آیکون تنها (مثل قبل از اضافه‌شدن دکمه) توی nav-icons
+   می‌مونه - رجوع کن به .header-account-icon-mobile. */
+.logo-account-wrap{
+
+display:flex;
+
+align-items:center;
+
+gap:18px;
+
+}
+
 .header-account-btn{
 
 display:flex;
@@ -48,17 +62,26 @@ font-size:14px;
 
 }
 
-@media (max-width:576px){
-
-.header-account-btn span{
+/* آیکون تنهای حساب کاربری تو nav-icons، فقط تو موبایل دیده می‌شه -
+   استایلش رو از قوانین عمومی .nav-icons a / .nav-icons i می‌گیره،
+   دقیقاً مثل قبل از دکمه‌ی مستطیلی */
+.nav-icons .header-account-icon-mobile{
 
 display:none;
 
 }
 
-.header-account-btn{
+@media (max-width:768px){
 
-padding:9px 12px;
+.logo-account-wrap .header-account-btn{
+
+display:none;
+
+}
+
+.nav-icons .header-account-icon-mobile{
+
+display:inline-flex;
 
 }
 
