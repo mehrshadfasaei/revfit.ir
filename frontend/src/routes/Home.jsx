@@ -49,7 +49,18 @@ const COUNTERS = [
     { value: "98%", label: "رضایت مشتری" },
 ];
 
-const INSTAGRAM_IMAGES = [1, 2, 3, 4, 5, 6].map((n) => `/images/instagram${n}.jpg`);
+/* باگ قدیمی: این ۶ تا به instagram1.jpg...instagram6.jpg اشاره می‌کردن که
+   اصلاً توی public/images وجود نداشتن (عکس خراب/خالی نشون می‌داد). با
+   ۶ تا از عکس‌های محصول خودمون (طرح‌های چاپی روی تیشرت/هودی) جایگزین شد -
+   تنها عکس‌هایی توی پوشه که مطمئنیم مال خودمونه، نه از سایت/برند دیگه. */
+const INSTAGRAM_IMAGES = [
+    "/images/ChatGPT Image Aug 23, 2026, 03_20_55 PM.png",
+    "/images/ChatGPT Image Aug 23, 2026, 03_20_57 PM.png",
+    "/images/ChatGPT Image Aug 23, 2026, 03_21_00 PM.png",
+    "/images/ChatGPT Image Aug 23, 2026, 03_31_27 PM.png",
+    "/images/ChatGPT Image Aug 23, 2026, 03_31_41 PM.png",
+    "/images/ChatGPT Image Aug 23, 2026, 03_34_08 PM.png",
+];
 
 /**
  * پورت‌شده از html/index.html + js/home.js.
