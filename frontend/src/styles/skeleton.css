@@ -1,0 +1,108 @@
+/*==================================================
+        PRODUCT CARD SKELETON (لودینگ محصولات)
+
+        فیچر جدیده، معادل قدیمی نداشت - رجوع کن به
+        components/ui/ProductCardSkeleton.jsx
+==================================================*/
+
+@keyframes skeleton-shimmer{
+
+0%{
+
+background-position:-400px 0;
+
+}
+
+100%{
+
+background-position:400px 0;
+
+}
+
+}
+
+.skeleton-shimmer{
+
+background-color:#eee;
+
+background-image:linear-gradient(90deg,#eee 0px,#f6f6f6 40px,#eee 80px);
+
+background-size:600px 100%;
+
+background-repeat:no-repeat;
+
+animation:skeleton-shimmer 1.6s infinite linear;
+
+}
+
+.skeleton-card{
+
+pointer-events:none;
+
+}
+
+.skeleton-image{
+
+width:100%;
+
+height:100%;
+
+border-radius:12px;
+
+}
+
+.skeleton-line{
+
+height:16px;
+
+border-radius:6px;
+
+margin:0 auto 14px;
+
+}
+
+.skeleton-line-title{
+
+width:70%;
+
+height:20px;
+
+}
+
+.skeleton-line-rating{
+
+width:40%;
+
+height:14px;
+
+}
+
+.skeleton-line-price{
+
+width:50%;
+
+height:20px;
+
+}
+
+.skeleton-line-btn{
+
+width:100%;
+
+height:55px;
+
+border-radius:50px;
+
+margin-bottom:0;
+
+}
+
+.skeleton-card-featured .skeleton-line-btn{
+
+width:45%;
+
+height:16px;
+
+border-radius:6px;
+
+}

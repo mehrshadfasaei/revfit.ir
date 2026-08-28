@@ -3,8 +3,11 @@ import { Link } from "react-router-dom";
 import { useProducts } from "../hooks/useProducts";
 import MobileSliderDots, { useMobileItemSlider } from "../components/ui/MobileItemSlider";
 import ProductCard from "../components/ui/ProductCard";
+import ProductCardSkeleton from "../components/ui/ProductCardSkeleton";
 import { showToast } from "../lib/toast";
 import { useAuth } from "../context/AuthContext";
+
+const FEATURED_SKELETON_COUNT = 4;
 
 const SLIDES = [
     {
@@ -175,20 +178,26 @@ function FeaturedProducts() {
                 </div>
 
                 <div className="products-grid" id="featuredProductsGrid">
+                    {loading &&
+                        Array.from({ length: FEATURED_SKELETON_COUNT }).map((_, i) => (
+                            <ProductCardSkeleton key={i} variant="featured" />
+                        ))}
+
                     {!loading && featured.length === 0 && (
                         <p style={{ gridColumn: "1/-1", textAlign: "center", padding: "40px 20px", color: "var(--secondary)" }}>
                             ⚠️ در حال حاضر اتصال به فروشگاه برقرار نیست. لطفاً چند لحظه دیگه صفحه رو رفرش کن.
                         </p>
                     )}
 
-                    {featured.map((product, i) => (
-                        <ProductCard
-                            key={product.id}
-                            product={product}
-                            variant="featured"
-                            className={i === current ? "mobile-slide-active" : undefined}
-                        />
-                    ))}
+                    {!loading &&
+                        featured.map((product, i) => (
+                            <ProductCard
+                                key={product.id}
+                                product={product}
+                                variant="featured"
+                                className={i === current ? "mobile-slide-active" : undefined}
+                            />
+                        ))}
                 </div>
 
                 <MobileSliderDots count={featured.length} current={current} onSelect={goTo} />
