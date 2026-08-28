@@ -2,10 +2,12 @@ import { useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import PageBanner from "../components/ui/PageBanner";
 import ProductCard from "../components/ui/ProductCard";
+import ProductCardSkeleton from "../components/ui/ProductCardSkeleton";
 import Pagination from "../components/ui/Pagination";
 import { useProducts } from "../hooks/useProducts";
 
 const PER_PAGE = 8;
+const SKELETON_COUNT = 8;
 
 function sortProducts(list, sortKey) {
     const sorted = [...list];
@@ -118,7 +120,15 @@ export default function Products() {
 
             <section className="products shop-products">
                 <div className="container">
-                    {pageItems.length > 0 && (
+                    {loading && (
+                        <div className="products-grid" id="productsGrid">
+                            {Array.from({ length: SKELETON_COUNT }).map((_, i) => (
+                                <ProductCardSkeleton key={i} variant="grid" />
+                            ))}
+                        </div>
+                    )}
+
+                    {!loading && pageItems.length > 0 && (
                         <div className="products-grid" id="productsGrid">
                             {pageItems.map((product) => (
                                 <ProductCard key={product.id} product={product} variant="grid" />
@@ -126,7 +136,7 @@ export default function Products() {
                         </div>
                     )}
 
-                    {pageItems.length === 0 && (
+                    {!loading && pageItems.length === 0 && (
                         <div className="empty-state show" id="emptyState">
                             <i className="fa-solid fa-box-open"></i>
                             <p>
