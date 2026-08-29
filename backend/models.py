@@ -29,6 +29,34 @@ class Product(Base):
     sales = Column(Integer, default=0)
     created_at = Column(DateTime, default=datetime.utcnow)
 
+    # تخفیف/جشنواره - روشن/خاموش دستی توسط ادمین (بدون تاریخ شروع/پایان).
+    # discount_type: "percent" (درصدی) یا "fixed" (مبلغ ثابت به تومان) یا None
+    discount_type = Column(String, nullable=True)
+    discount_value = Column(Float, nullable=True)
+    discount_active = Column(Boolean, default=False, nullable=False)
+
+    @property
+    def final_price(self) -> int:
+        """قیمتی که واقعاً باید از مشتری گرفته بشه - اگه تخفیف فعال
+        و معتبر باشه، قیمت تخفیف‌خورده؛ وگرنه قیمت عادی. عمداً
+        محاسبه‌شده‌ست (ذخیره نمی‌شه) تا هیچ‌وقت با تغییر price یا
+        discount_value ناهماهنگ نشه. همین متد توی create_order هم
+        استفاده می‌شه تا مبلغ نهایی سفارش هیچ‌وقت دست مرورگر
+        مشتری نباشه."""
+
+        if not self.discount_active or not self.discount_type or not self.discount_value:
+            return self.price
+
+        if self.discount_type == "percent":
+            discounted = self.price - (self.price * self.discount_value / 100)
+        elif self.discount_type == "fixed":
+            discounted = self.price - self.discount_value
+        else:
+            return self.price
+
+        # هیچ‌وقت منفی یا بیشتر از قیمت اصلی نمی‌شه
+        return max(0, min(self.price, round(discounted)))
+
     images = relationship(
         "ProductImage",
         back_populates="product",

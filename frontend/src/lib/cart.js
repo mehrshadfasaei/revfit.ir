@@ -31,7 +31,12 @@ export function addToCart(product, quantity = 1) {
     const cartItem = {
         id: product.id,
         title: product.title,
-        price: product.price,
+        // اگه تخفیف فعال باشه، همون قیمت نهایی (final_price) ذخیره
+        // می‌شه تا چیزی که تو سبد/تسویه‌حساب نشون داده می‌شه با
+        // مبلغی که واقعاً موقع ثبت سفارش از سرور محاسبه می‌شه یکی
+        // باشه - سرور همیشه مستقل از این مقدار، از روی دیتابیس
+        // دوباره محاسبه می‌کنه، این فقط برای نمایش درسته.
+        price: product.final_price ?? product.price,
         image: product.image,
         size: product.size || null,
         quantity: quantity,

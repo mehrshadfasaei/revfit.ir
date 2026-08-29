@@ -803,6 +803,46 @@ margin-bottom:25px;
 
 }
 
+/* قیمت تخفیف‌خورده (فیچر جدیده) - عمداً فقط چیدمان (flex) رو
+   عوض می‌کنه، نه سایز/رنگ فونت، چون این‌ها همیشه از قوانین
+   خاص‌تر ".price" هر صفحه (کارت محصول/جزئیات محصول/محصولات
+   مشابه) میان و نباید بشکنن. */
+.price.price-discounted{
+
+display:flex;
+
+align-items:baseline;
+
+gap:10px;
+
+flex-wrap:wrap;
+
+}
+
+.product-info .price.price-discounted{
+
+justify-content:center;
+
+}
+
+.price-old{
+
+font-size:.6em;
+
+font-weight:600;
+
+color:var(--secondary);
+
+text-decoration:line-through;
+
+}
+
+.price-new{
+
+color:#c0392b;
+
+}
+
 .product-info button{
 
 width:100%;

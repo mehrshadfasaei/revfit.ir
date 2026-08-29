@@ -555,6 +555,27 @@ def list_all_products_for_admin(db: Session = Depends(get_db)):
 #   PRODUCTS (نوشتن - فقط ادمین)
 # ---------------------------------------------------------
 
+def validate_discount(discount_type: str | None, discount_value: float | None, discount_active: bool, price: int):
+    """اعتبارسنجی ترکیب تخفیف قبل از ذخیره - چه موقع ساخت محصول
+    جدید چه ویرایش. جلوی چیزهایی مثل تخفیف ۱۵۰٪ یا مبلغ ثابت
+    بزرگ‌تر از خودِ قیمت رو می‌گیره."""
+
+    if not discount_active:
+        return
+
+    if not discount_type or discount_value is None:
+        raise HTTPException(status_code=400, detail="برای فعال‌کردن تخفیف، باید نوع و مقدار تخفیف رو مشخص کنی")
+
+    if discount_type == "percent":
+        if not (0 < discount_value <= 100):
+            raise HTTPException(status_code=400, detail="درصد تخفیف باید بین ۱ تا ۱۰۰ باشه")
+    elif discount_type == "fixed":
+        if not (0 < discount_value < price):
+            raise HTTPException(status_code=400, detail="مبلغ تخفیف باید بزرگ‌تر از صفر و کمتر از قیمت محصول باشه")
+    else:
+        raise HTTPException(status_code=400, detail="نوع تخفیف نامعتبره")
+
+
 @app.post("/api/products", response_model=schemas.ProductOut, dependencies=[Depends(verify_admin)])
 def create_product(product: schemas.ProductCreate, db: Session = Depends(get_db)):
     data = product.dict()
@@ -565,6 +586,8 @@ def create_product(product: schemas.ProductCreate, db: Session = Depends(get_db)
     data["category"] = sanitize_text(data["category"])
     if data.get("description"):
         data["description"] = sanitize_text(data["description"])
+
+    validate_discount(data.get("discount_type"), data.get("discount_value"), data.get("discount_active", False), data["price"])
 
     db_product = models.Product(**data)
     db.add(db_product)
@@ -593,6 +616,11 @@ def update_product(product_id: int, product: schemas.ProductUpdate, db: Session 
             value = sanitize_text(value)
 
         setattr(db_product, field, value)
+
+    # اعتبارسنجی بعد از اعمال همه‌ی تغییرات - چون PUT ممکنه فقط
+    # یکی از سه فیلد تخفیف رو بفرسته (مثلاً فقط discount_active)،
+    # باید حالت نهایی محصول رو چک کنیم نه فقط فیلدهای همین درخواست
+    validate_discount(db_product.discount_type, db_product.discount_value, db_product.discount_active, db_product.price)
 
     db.commit()
     db.refresh(db_product)
@@ -973,7 +1001,7 @@ def create_order(
         verified_items.append({
             "id": db_product.id,
             "title": db_product.title,          # عنوان واقعی از دیتابیس، نه ورودی کاربر
-            "price": db_product.price,           # قیمت واقعی از دیتابیس، نه ورودی کاربر
+            "price": db_product.final_price,     # قیمت واقعی از دیتابیس (با تخفیف فعال، اگه باشه) - نه ورودی کاربر
             "size": item.size,
             "quantity": item.quantity,
         })

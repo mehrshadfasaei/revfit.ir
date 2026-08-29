@@ -1,11 +1,11 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { getProductById, getProducts } from "../lib/api";
-import { formatPrice } from "../lib/format";
 import { addToCart } from "../lib/cart";
 import { showToast } from "../lib/toast";
 import Stars from "../components/ui/Stars";
 import Accordion from "../components/ui/Accordion";
+import PriceTag from "../components/ui/PriceTag";
 import { useInView } from "../hooks/useInView";
 
 const PLACEHOLDER_RATING = 4.8;
@@ -199,9 +199,7 @@ export default function ProductDetail() {
                                 </span>
                             </div>
 
-                            <span className="price" id="productPrice">
-                                {formatPrice(product.price)} تومان
-                            </span>
+                            <PriceTag product={product} id="productPrice" />
 
                             <p className="product-short-desc" id="productDescription">
                                 {shortDesc}
@@ -393,7 +391,7 @@ function RelatedCard({ product }) {
         <Link to={`/product/${product.id}`} className={`related-card${inView ? " show" : ""}`} ref={ref}>
             <img src={product.image} alt={product.title} />
             <h4>{product.title}</h4>
-            <span className="price">{formatPrice(product.price)} تومان</span>
+            <PriceTag product={product} />
         </Link>
     );
 }

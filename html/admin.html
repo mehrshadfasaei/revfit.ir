@@ -559,6 +559,46 @@
 
             </label>
 
+            <div class="admin-discount-box">
+
+                <label class="admin-stock-toggle">
+
+                    <input type="checkbox" id="productDiscountActiveInput">
+
+                    <span>🔥 تخفیف/جشنواره فعال باشه</span>
+
+                </label>
+
+                <div class="admin-form-row admin-discount-fields" id="discountFieldsRow" style="display:none;">
+
+                    <label>
+
+                        نوع تخفیف
+
+                        <select id="productDiscountTypeInput">
+
+                            <option value="percent">درصدی (٪)</option>
+
+                            <option value="fixed">مبلغ ثابت (تومان)</option>
+
+                        </select>
+
+                    </label>
+
+                    <label>
+
+                        مقدار تخفیف
+
+                        <input type="number" id="productDiscountValueInput" min="0" step="1" placeholder="مثلاً ۲۰">
+
+                    </label>
+
+                </div>
+
+                <p class="admin-form-note" id="discountFinalPricePreview" style="display:none;"></p>
+
+            </div>
+
             <label>
 
                 توضیحات محصول (اختیاری — اگه خالی بذاری، سایت خودش یه توضیح خودکار می‌سازه)
