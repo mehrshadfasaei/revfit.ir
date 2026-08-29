@@ -47,6 +47,24 @@ export default function Products() {
     const debounceRef = useRef(null);
     const toolbarRef = useRef(null);
 
+    // فیلتر دسته‌بندی/قیمت (فیچر جدیده) - دسته‌بندی از خودِ لیست
+    // محصولات استخراج می‌شه (نه یه لیست ثابت جایی)، پس هر دسته‌ای
+    // که ادمین اضافه کنه خودکار این‌جا هم ظاهر می‌شه
+    const [category, setCategory] = useState("all");
+    const [priceMinInput, setPriceMinInput] = useState("");
+    const [priceMaxInput, setPriceMaxInput] = useState("");
+    const [priceMin, setPriceMin] = useState("");
+    const [priceMax, setPriceMax] = useState("");
+    // دو ref جدا برای دو تایمر جدا - وگرنه اگه کاربر سریع از فیلد
+    // «از» به فیلد «تا» بره (مثلاً با Tab)، تایمر دومی اولی رو
+    // clear می‌کنه و مقدار «از» هیچ‌وقت واقعاً اعمال نمی‌شه
+    const priceMinDebounceRef = useRef(null);
+    const priceMaxDebounceRef = useRef(null);
+
+    const categories = useMemo(() => [...new Set(products.map((p) => p.category))].sort(), [products]);
+
+    const hasActiveFilters = category !== "all" || priceMin !== "" || priceMax !== "";
+
     function handleSearchInput(e) {
         const value = e.target.value;
         setSearchInput(value);
@@ -63,6 +81,33 @@ export default function Products() {
         setPage(1);
     }
 
+    function handleCategoryChange(next) {
+        setCategory(next);
+        setPage(1);
+    }
+
+    function handlePriceInputChange(setter, valueSetter, debounceRef) {
+        return (e) => {
+            const value = e.target.value;
+            setter(value);
+
+            clearTimeout(debounceRef.current);
+            debounceRef.current = setTimeout(() => {
+                valueSetter(value);
+                setPage(1);
+            }, 400);
+        };
+    }
+
+    function handleClearFilters() {
+        setCategory("all");
+        setPriceMinInput("");
+        setPriceMaxInput("");
+        setPriceMin("");
+        setPriceMax("");
+        setPage(1);
+    }
+
     const filtered = useMemo(() => {
         let list = products;
 
@@ -71,8 +116,26 @@ export default function Products() {
             list = list.filter((p) => p.title.toLowerCase().includes(term) || p.category.toLowerCase().includes(term));
         }
 
+        if (category !== "all") {
+            list = list.filter((p) => p.category === category);
+        }
+
+        // final_price همیشه قیمت واقعیه (اگه تخفیف فعال باشه، همون
+        // قیمت تخفیف‌خورده) - فیلتر قیمت هم باید رو همین اعمال بشه،
+        // نه رو price خام، وگرنه محصول تخفیف‌دار که قیمت نهاییش تو
+        // بازه‌ست ولی قیمت اصلیش نیست، غلط فیلتر می‌شد
+        if (priceMin !== "") {
+            const min = Number(priceMin);
+            list = list.filter((p) => (p.final_price ?? p.price) >= min);
+        }
+
+        if (priceMax !== "") {
+            const max = Number(priceMax);
+            list = list.filter((p) => (p.final_price ?? p.price) <= max);
+        }
+
         return sortProducts(list, sort);
-    }, [products, search, sort]);
+    }, [products, search, sort, category, priceMin, priceMax]);
 
     const backendDown = !loading && products.length === 0;
 
@@ -113,6 +176,56 @@ export default function Products() {
                                 <option value="expensive">گران‌ترین</option>
                                 <option value="bestseller">پرفروش‌ترین</option>
                             </select>
+                        </div>
+                    </div>
+
+                    {/* فیلتر دسته‌بندی/قیمت (فیچر جدیده) */}
+                    <div className="shop-filters">
+                        <div className="filter-categories">
+                            <button
+                                className={`filter-chip${category === "all" ? " active" : ""}`}
+                                onClick={() => handleCategoryChange("all")}
+                            >
+                                همه دسته‌ها
+                            </button>
+                            {categories.map((c) => (
+                                <button
+                                    key={c}
+                                    className={`filter-chip${category === c ? " active" : ""}`}
+                                    onClick={() => handleCategoryChange(c)}
+                                >
+                                    {c}
+                                </button>
+                            ))}
+                        </div>
+
+                        <div className="filter-price">
+                            <label>
+                                از
+                                <input
+                                    type="number"
+                                    min="0"
+                                    placeholder="حداقل قیمت"
+                                    value={priceMinInput}
+                                    onChange={handlePriceInputChange(setPriceMinInput, setPriceMin, priceMinDebounceRef)}
+                                />
+                            </label>
+                            <label>
+                                تا
+                                <input
+                                    type="number"
+                                    min="0"
+                                    placeholder="حداکثر قیمت"
+                                    value={priceMaxInput}
+                                    onChange={handlePriceInputChange(setPriceMaxInput, setPriceMax, priceMaxDebounceRef)}
+                                />
+                            </label>
+
+                            {hasActiveFilters && (
+                                <button type="button" className="filter-clear-btn" onClick={handleClearFilters}>
+                                    <i className="fa-solid fa-xmark"></i> پاک کردن فیلترها
+                                </button>
+                            )}
                         </div>
                     </div>
                 </div>

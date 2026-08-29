@@ -260,6 +260,172 @@ border-color:var(--gold);
 
 
 /*==================================================
+        فیلتر دسته‌بندی/قیمت (فیچر جدیده)
+==================================================*/
+
+.shop-filters{
+
+background:#fff;
+
+border-radius:var(--radius);
+
+box-shadow:var(--shadow);
+
+padding:22px 30px;
+
+margin-top:16px;
+
+display:flex;
+
+align-items:center;
+
+justify-content:space-between;
+
+gap:20px;
+
+flex-wrap:wrap;
+
+}
+
+.filter-categories{
+
+display:flex;
+
+flex-wrap:wrap;
+
+gap:10px;
+
+}
+
+.filter-chip{
+
+font-family:inherit;
+
+font-size:13px;
+
+font-weight:600;
+
+color:var(--primary);
+
+border:2px solid var(--border);
+
+border-radius:50px;
+
+padding:8px 18px;
+
+background:#fff;
+
+cursor:pointer;
+
+transition:var(--transition);
+
+white-space:nowrap;
+
+}
+
+.filter-chip:hover{
+
+border-color:var(--gold);
+
+}
+
+.filter-chip.active{
+
+background:var(--primary);
+
+border-color:var(--primary);
+
+color:#fff;
+
+}
+
+.filter-price{
+
+display:flex;
+
+align-items:center;
+
+gap:14px;
+
+flex-wrap:wrap;
+
+}
+
+.filter-price label{
+
+display:flex;
+
+align-items:center;
+
+gap:8px;
+
+font-size:13px;
+
+font-weight:600;
+
+color:var(--secondary);
+
+white-space:nowrap;
+
+}
+
+.filter-price input{
+
+width:130px;
+
+font-family:inherit;
+
+font-size:13px;
+
+border:2px solid var(--border);
+
+border-radius:50px;
+
+padding:8px 16px;
+
+outline:none;
+
+background:var(--gray);
+
+color:var(--primary);
+
+transition:var(--transition);
+
+}
+
+.filter-price input:hover,
+.filter-price input:focus{
+
+border-color:var(--gold);
+
+}
+
+.filter-clear-btn{
+
+display:flex;
+
+align-items:center;
+
+gap:6px;
+
+font-family:inherit;
+
+font-size:13px;
+
+font-weight:700;
+
+color:#c0392b;
+
+background:none;
+
+cursor:pointer;
+
+white-space:nowrap;
+
+}
+
+
+/*==================================================
         SHOP PRODUCTS GRID (overrides section padding)
 ==================================================*/
 
@@ -686,6 +852,30 @@ max-width:100%;
 .toolbar-sort{
 
 justify-content:space-between;
+
+}
+
+.shop-filters{
+
+flex-direction:column;
+
+align-items:stretch;
+
+padding:20px;
+
+}
+
+.filter-price{
+
+justify-content:space-between;
+
+}
+
+.filter-price input{
+
+width:auto;
+
+flex:1;
 
 }
 
