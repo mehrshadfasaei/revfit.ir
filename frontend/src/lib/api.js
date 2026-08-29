@@ -49,6 +49,28 @@ export async function getProductById(id) {
     return products.find((p) => p.id === Number(id)) || null;
 }
 
+/**
+ * فیچر جدیده، معادل قدیمی نداشت - وقتی تو تسویه‌حساب کاربر یه
+ * کد تخفیف وارد می‌کنه و «اعمال کد» رو می‌زنه، این صدا زده
+ * می‌شه. فقط برای پیش‌نمایشه - محاسبه‌ی نهایی و امن همیشه سمت
+ * سرور، توی create_order، دوباره انجام می‌شه.
+ */
+export async function validateCoupon(code, subtotal) {
+    try {
+        const res = await fetch(`${API_BASE_URL}/api/coupons/validate`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ code, subtotal }),
+        });
+
+        if (!res.ok) return { valid: false, message: "بررسی کد تخفیف با مشکل مواجه شد", discount_amount: 0 };
+
+        return await res.json();
+    } catch (err) {
+        return { valid: false, message: "اتصال به سرور برقرار نشد", discount_amount: 0 };
+    }
+}
+
 /*====================================
         CLIENT ERROR LOGGING
 

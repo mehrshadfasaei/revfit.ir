@@ -120,6 +120,8 @@ class Order(Base):
     shipping = Column(Integer, nullable=False)          # مبلغی که واقعاً به کل سفارش اضافه شد (اگه پس‌کرایه باشه صفره)
     shipping_payment_type = Column(String, default="prepaid")   # prepaid | cod (پس‌کرایه)
     shipping_estimated = Column(Integer, nullable=True)          # تخمین واقعی هزینه ارسال (چه پرداخت‌شده باشه چه نه)
+    coupon_code = Column(String, nullable=True)          # کد تخفیفی که استفاده شده (snapshot - اگه بعداً کد حذف/تغییر کنه، سفارش قدیمی دست‌نخورده می‌مونه)
+    coupon_discount = Column(Integer, default=0, nullable=False)  # مبلغی که از subtotal کم شد
     total = Column(Integer, nullable=False)
 
     status = Column(String, default="pending")        # pending | paid | shipped | delivered
@@ -141,6 +143,24 @@ class OrderItem(Base):
     quantity = Column(Integer, nullable=False)
 
     order = relationship("Order", back_populates="items")
+
+
+class Coupon(Base):
+    """کد تخفیف - جدا از تخفیف روی خودِ محصول (Product.discount_*).
+    روی کل سبد خرید (subtotal) اعمال می‌شه، دستی روشن/خاموش می‌شه
+    (بدون تاریخ انقضا)، و محدودیت تعداد استفاده نداره - هر مشتری
+    هر چندبار بخواد می‌تونه استفاده کنه."""
+
+    __tablename__ = "coupons"
+
+    id = Column(Integer, primary_key=True, index=True)
+    code = Column(String, unique=True, index=True, nullable=False)   # همیشه با حروف بزرگ ذخیره می‌شه
+    discount_type = Column(String, nullable=False)     # "percent" | "fixed"
+    discount_value = Column(Float, nullable=False)
+    min_order_amount = Column(Integer, nullable=True)  # حداقل مبلغ سبد برای اعمال کد (اختیاری)
+    active = Column(Boolean, default=True, nullable=False)
+    usage_count = Column(Integer, default=0, nullable=False)  # فقط برای گزارش ادمین - محدودکننده نیست
+    created_at = Column(DateTime, default=datetime.utcnow)
 
 
 class ErrorLog(Base):

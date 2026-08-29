@@ -5,6 +5,7 @@ import { getMergedCart, getCartTotals, saveCart } from "../lib/cart";
 import { formatPrice } from "../lib/format";
 import { showToast } from "../lib/toast";
 import { useAuth } from "../context/AuthContext";
+import { validateCoupon } from "../lib/api";
 
 /**
  * پورت‌شده از html/checkout.html + js/checkout.js. دو تا تفاوت
@@ -27,6 +28,16 @@ export default function Checkout() {
     const [submitting, setSubmitting] = useState(false);
     const [errorFields, setErrorFields] = useState(new Set());
 
+    // کد تخفیف (فیچر جدیده) - couponInput همون چیزیه که کاربر
+    // تایپ می‌کنه؛ appliedCoupon فقط بعد از تأیید موفق /api/coupons/validate
+    // پر می‌شه. couponMessage خطای آخرین تلاش رو نشون می‌ده (اگه
+    // بود). محاسبه‌ی نهایی و امن همیشه دوباره سمت سرور (create_order)
+    // انجام می‌شه؛ این‌جا فقط برای پیش‌نمایشه.
+    const [couponInput, setCouponInput] = useState("");
+    const [appliedCoupon, setAppliedCoupon] = useState(null);
+    const [couponMessage, setCouponMessage] = useState("");
+    const [checkingCoupon, setCheckingCoupon] = useState(false);
+
     useEffect(() => {
         if (cart.length === 0) navigate("/cart", { replace: true });
     }, [cart, navigate]);
@@ -35,7 +46,38 @@ export default function Checkout() {
 
     const { subtotal, shipping } = getCartTotals(cart);
     const isCodShipping = shippingType === "cod";
-    const total = isCodShipping ? subtotal : subtotal + shipping;
+    const couponDiscount = appliedCoupon ? appliedCoupon.discount_amount : 0;
+    const total = (isCodShipping ? subtotal : subtotal + shipping) - couponDiscount;
+
+    async function handleApplyCoupon() {
+        const code = couponInput.trim();
+
+        if (!code) {
+            setCouponMessage("یه کد تخفیف وارد کن");
+            return;
+        }
+
+        setCheckingCoupon(true);
+        setCouponMessage("");
+
+        const result = await validateCoupon(code, subtotal);
+
+        setCheckingCoupon(false);
+
+        if (result.valid) {
+            setAppliedCoupon({ code: code.trim().toUpperCase(), discount_amount: result.discount_amount });
+            setCouponMessage(result.message);
+        } else {
+            setAppliedCoupon(null);
+            setCouponMessage(result.message);
+        }
+    }
+
+    function handleRemoveCoupon() {
+        setAppliedCoupon(null);
+        setCouponInput("");
+        setCouponMessage("");
+    }
 
     async function handleSubmit(e) {
         e.preventDefault();
@@ -95,6 +137,7 @@ export default function Checkout() {
             shippingPaymentType: formData.get("shippingPaymentType") || "prepaid",
             notes: formData.get("notes") || null,
             website: formData.get("website") || "",
+            couponCode: appliedCoupon ? appliedCoupon.code : null,
             items: cart.map((item) => ({
                 id: item.id,
                 title: item.title,
@@ -270,10 +313,46 @@ export default function Checkout() {
                                 ))}
                             </div>
 
+                            <div className="coupon-box">
+                                {appliedCoupon ? (
+                                    <div className="coupon-applied">
+                                        <span>
+                                            <i className="fa-solid fa-tag"></i> کد «{appliedCoupon.code}» اعمال شد
+                                        </span>
+                                        <button type="button" onClick={handleRemoveCoupon}>
+                                            حذف
+                                        </button>
+                                    </div>
+                                ) : (
+                                    <div className="coupon-input-row">
+                                        <input
+                                            type="text"
+                                            placeholder="کد تخفیف رو وارد کن"
+                                            value={couponInput}
+                                            onChange={(e) => setCouponInput(e.target.value)}
+                                        />
+                                        <button type="button" onClick={handleApplyCoupon} disabled={checkingCoupon}>
+                                            {checkingCoupon ? "..." : "اعمال کد"}
+                                        </button>
+                                    </div>
+                                )}
+                                {couponMessage && (
+                                    <p className={`coupon-message${appliedCoupon ? " coupon-message-success" : " coupon-message-error"}`}>
+                                        {couponMessage}
+                                    </p>
+                                )}
+                            </div>
+
                             <div className="summary-row">
                                 <span>جمع جزء</span>
                                 <span id="checkoutSubtotal">{formatPrice(subtotal)} تومان</span>
                             </div>
+                            {appliedCoupon && (
+                                <div className="summary-row summary-row-discount">
+                                    <span>تخفیف کد</span>
+                                    <span>-{formatPrice(couponDiscount)} تومان</span>
+                                </div>
+                            )}
                             <div className="summary-row">
                                 <span>هزینه ارسال</span>
                                 <span id="checkoutShipping">{isCodShipping ? "پس‌کرایه" : `${formatPrice(shipping)} تومان`}</span>

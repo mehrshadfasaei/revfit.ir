@@ -112,6 +112,7 @@ class OrderCreate(BaseModel):
     notes: Optional[str] = Field(None, max_length=500)
     shippingPaymentType: Optional[str] = "prepaid"    # prepaid | cod (پس‌کرایه)
     website: Optional[str] = Field(None, max_length=200)    # honeypot ضدربات - نباید هیچ‌وقت پر باشه
+    couponCode: Optional[str] = Field(None, max_length=50)
     items: List[OrderItemIn]
 
 
@@ -139,6 +140,8 @@ class OrderOut(BaseModel):
     shipping: int
     shipping_payment_type: str = "prepaid"
     shipping_estimated: Optional[int] = None
+    coupon_code: Optional[str] = None
+    coupon_discount: int = 0
     total: int
     status: str
     created_at: datetime
@@ -146,6 +149,50 @@ class OrderOut(BaseModel):
 
     class Config:
         orm_mode = True
+
+
+# ---------------------------------------------------------
+#   کد تخفیف (کوپن)
+# ---------------------------------------------------------
+
+class CouponOut(BaseModel):
+    id: int
+    code: str
+    discount_type: str
+    discount_value: float
+    min_order_amount: Optional[int] = None
+    active: bool
+    usage_count: int
+    created_at: datetime
+
+    class Config:
+        orm_mode = True
+
+
+class CouponCreate(BaseModel):
+    code: str = Field(..., min_length=2, max_length=50)
+    discount_type: str
+    discount_value: float
+    min_order_amount: Optional[int] = None
+    active: bool = True
+
+
+class CouponUpdate(BaseModel):
+    discount_type: Optional[str] = None
+    discount_value: Optional[float] = None
+    min_order_amount: Optional[int] = None
+    active: Optional[bool] = None
+
+
+class CouponValidateRequest(BaseModel):
+    code: str = Field(..., max_length=50)
+    subtotal: int
+
+
+class CouponValidateResponse(BaseModel):
+    valid: bool
+    message: str
+    discount_amount: int = 0
 
 
 class ErrorLogCreate(BaseModel):
