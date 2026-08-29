@@ -417,6 +417,8 @@ document.querySelectorAll(".admin-nav-link").forEach(link => {
 
         if(link.dataset.tab === "messages") loadContactMessages();
 
+        if(link.dataset.tab === "coupons") loadCoupons();
+
     });
 
 });
@@ -1056,6 +1058,228 @@ document.getElementById("adminProductsTableBody").addEventListener("click", (e) 
     if(deleteBtn) deleteProduct(Number(deleteBtn.dataset.id));
 
     if(unarchiveBtn) unarchiveProduct(Number(unarchiveBtn.dataset.id));
+
+});
+
+
+/*====================================
+        COUPONS (کد تخفیف - فیچر جدیده)
+====================================*/
+
+let allCoupons = [];
+
+async function loadCoupons(){
+
+    const tbody = document.getElementById("adminCouponsTableBody");
+
+    try{
+
+        const res = await fetchWithRetry(`${API_BASE_URL}/api/admin/coupons`, {
+
+            headers: adminHeaders()
+
+        });
+
+        allCoupons = await res.json();
+
+        if(allCoupons.length === 0){
+            tbody.innerHTML = `<tr class="admin-empty-row"><td colspan="6">هنوز کد تخفیفی ثبت نشده.</td></tr>`;
+            return;
+        }
+
+        tbody.innerHTML = allCoupons.map(c => {
+
+            const typeLabel = c.discount_type === "percent" ? `${c.discount_value}٪` : `${formatPrice(c.discount_value)} تومان`;
+
+            return `
+            <tr>
+                <td><strong>${c.code}</strong></td>
+                <td>${typeLabel}</td>
+                <td>${c.min_order_amount ? formatPrice(c.min_order_amount) + " تومان" : "—"}</td>
+                <td>${c.usage_count}</td>
+                <td><span class="admin-stock-badge ${c.active ? "in" : "out"}">${c.active ? "فعال" : "غیرفعال"}</span></td>
+                <td>
+                    <div class="admin-table-actions">
+                        <button class="admin-action-btn edit" data-id="${c.id}" title="ویرایش">
+                            <i class="fa-solid fa-pen"></i>
+                        </button>
+                        <button class="admin-action-btn delete" data-id="${c.id}" title="حذف">
+                            <i class="fa-solid fa-trash"></i>
+                        </button>
+                    </div>
+                </td>
+            </tr>
+        `;
+
+        }).join("");
+
+    }catch(err){
+
+        tbody.innerHTML = `<tr class="admin-empty-row"><td colspan="6">اتصال به بک‌اند برقرار نشد.</td></tr>`;
+
+    }
+
+}
+
+const couponModalOverlay = document.getElementById("couponModalOverlay");
+const couponForm = document.getElementById("couponForm");
+
+function openCouponModal(id = null){
+
+    couponForm.reset();
+
+    document.getElementById("couponId").value = "";
+
+    if(id){
+
+        const coupon = allCoupons.find(c => c.id === id);
+
+        document.getElementById("couponModalTitle").textContent = "ویرایش کد تخفیف";
+        document.getElementById("couponId").value = coupon.id;
+        document.getElementById("couponCodeInput").value = coupon.code;
+        document.getElementById("couponCodeInput").disabled = true;   // بعد از ساخته‌شدن، خودِ کد قابل تغییر نیست (فقط نوع/مقدار/وضعیت)
+        document.getElementById("couponTypeInput").value = coupon.discount_type;
+        document.getElementById("couponValueInput").value = coupon.discount_value;
+        document.getElementById("couponMinOrderInput").value = coupon.min_order_amount ?? "";
+        document.getElementById("couponActiveInput").checked = coupon.active;
+
+    }else{
+
+        document.getElementById("couponModalTitle").textContent = "افزودن کد تخفیف جدید";
+        document.getElementById("couponCodeInput").disabled = false;
+
+    }
+
+    couponModalOverlay.classList.add("show");
+
+}
+
+function closeCouponModal(){
+    couponModalOverlay.classList.remove("show");
+}
+
+document.getElementById("openAddCouponBtn").addEventListener("click", () => openCouponModal());
+document.getElementById("couponModalClose").addEventListener("click", closeCouponModal);
+couponModalOverlay.addEventListener("click", (e) => { if(e.target === couponModalOverlay) closeCouponModal(); });
+
+couponForm.addEventListener("submit", async (e) => {
+
+    e.preventDefault();
+
+    const submitBtn = couponForm.querySelector(".admin-form-submit");
+    submitBtn.disabled = true;
+    submitBtn.textContent = "در حال ذخیره...";
+
+    const id = document.getElementById("couponId").value;
+    const type = document.getElementById("couponTypeInput").value;
+    const value = Number(document.getElementById("couponValueInput").value);
+    const minOrderRaw = document.getElementById("couponMinOrderInput").value;
+
+    if(type === "percent" && (value <= 0 || value > 100)){
+        alert("درصد تخفیف باید بین ۱ تا ۱۰۰ باشه.");
+        submitBtn.disabled = false;
+        submitBtn.textContent = "ذخیره کد تخفیف";
+        return;
+    }
+
+    if(type === "fixed" && value <= 0){
+        alert("مبلغ تخفیف باید بزرگ‌تر از صفر باشه.");
+        submitBtn.disabled = false;
+        submitBtn.textContent = "ذخیره کد تخفیف";
+        return;
+    }
+
+    try{
+
+        if(id){
+
+            const payload = {
+                discount_type: type,
+                discount_value: value,
+                min_order_amount: minOrderRaw === "" ? null : Number(minOrderRaw),
+                active: document.getElementById("couponActiveInput").checked,
+            };
+
+            const res = await fetchWithRetry(`${API_BASE_URL}/api/admin/coupons/${id}`, {
+                method: "PUT",
+                headers: adminHeaders({ "Content-Type": "application/json" }),
+                body: JSON.stringify(payload)
+            });
+
+            if(!res.ok){
+                const errData = await res.json().catch(() => null);
+                throw new Error(errData?.detail || "ویرایش با مشکل مواجه شد");
+            }
+
+        }else{
+
+            const payload = {
+                code: document.getElementById("couponCodeInput").value,
+                discount_type: type,
+                discount_value: value,
+                min_order_amount: minOrderRaw === "" ? null : Number(minOrderRaw),
+                active: document.getElementById("couponActiveInput").checked,
+            };
+
+            const res = await fetchWithRetry(`${API_BASE_URL}/api/admin/coupons`, {
+                method: "POST",
+                headers: adminHeaders({ "Content-Type": "application/json" }),
+                body: JSON.stringify(payload)
+            });
+
+            if(!res.ok){
+                const errData = await res.json().catch(() => null);
+                throw new Error(errData?.detail || "ثبت کد تخفیف با مشکل مواجه شد");
+            }
+
+        }
+
+        closeCouponModal();
+        loadCoupons();
+
+    }catch(err){
+
+        alert(err.message || "ذخیره‌ی کد تخفیف با مشکل مواجه شد.");
+
+    }finally{
+
+        submitBtn.disabled = false;
+        submitBtn.textContent = "ذخیره کد تخفیف";
+
+    }
+
+});
+
+async function deleteCoupon(id){
+
+    if(!confirm("مطمئنی می‌خوای این کد تخفیف رو حذف کنی؟")) return;
+
+    try{
+
+        const res = await fetchWithRetry(`${API_BASE_URL}/api/admin/coupons/${id}`, {
+            method: "DELETE",
+            headers: adminHeaders()
+        });
+
+        if(!res.ok) throw new Error("خطا در حذف");
+
+        loadCoupons();
+
+    }catch(err){
+
+        alert("حذف کد تخفیف با مشکل مواجه شد.");
+
+    }
+
+}
+
+document.getElementById("adminCouponsTableBody").addEventListener("click", (e) => {
+
+    const editBtn = e.target.closest(".edit");
+    const deleteBtn = e.target.closest(".delete");
+
+    if(editBtn) openCouponModal(Number(editBtn.dataset.id));
+    if(deleteBtn) deleteCoupon(Number(deleteBtn.dataset.id));
 
 });
 

@@ -111,6 +111,12 @@
 
             </a>
 
+            <a href="#" class="admin-nav-link" data-tab="coupons">
+
+                <i class="fa-solid fa-ticket"></i> کدهای تخفیف
+
+            </a>
+
             <a href="#" class="admin-nav-link" data-tab="orders">
 
                 <i class="fa-solid fa-receipt"></i> سفارش‌ها
@@ -248,6 +254,58 @@
                     </thead>
 
                     <tbody id="adminProductsTableBody">
+
+                        <!-- Injected by admin.js -->
+
+                    </tbody>
+
+                </table>
+
+            </div>
+
+        </section>
+
+        <!-- COUPONS TAB (فیچر جدیده) -->
+
+        <section class="admin-tab-content" id="tab-coupons">
+
+            <div class="admin-page-header">
+
+                <h1>کدهای تخفیف</h1>
+
+                <button class="admin-btn-primary" id="openAddCouponBtn">
+
+                    <i class="fa-solid fa-plus"></i> افزودن کد جدید
+
+                </button>
+
+            </div>
+
+            <div class="admin-table-wrap">
+
+                <table class="admin-table">
+
+                    <thead>
+
+                        <tr>
+
+                            <th>کد</th>
+
+                            <th>نوع/مقدار</th>
+
+                            <th>حداقل سبد</th>
+
+                            <th>دفعات استفاده</th>
+
+                            <th>وضعیت</th>
+
+                            <th>عملیات</th>
+
+                        </tr>
+
+                    </thead>
+
+                    <tbody id="adminCouponsTableBody">
 
                         <!-- Injected by admin.js -->
 
@@ -646,6 +704,88 @@
             <button type="submit" class="admin-btn-primary admin-form-submit">
 
                 ذخیره محصول
+
+            </button>
+
+        </form>
+
+    </div>
+
+</div>
+
+<!--=========================================
+            COUPON MODAL (فیچر جدیده)
+==========================================-->
+
+<div class="admin-modal-overlay" id="couponModalOverlay">
+
+    <div class="admin-modal">
+
+        <button class="admin-modal-close" id="couponModalClose">
+
+            <i class="fa-solid fa-xmark"></i>
+
+        </button>
+
+        <h2 id="couponModalTitle">افزودن کد تخفیف جدید</h2>
+
+        <form id="couponForm">
+
+            <input type="hidden" id="couponId">
+
+            <label>
+
+                کد تخفیف (فقط حروف/عدد انگلیسی، بزرگ‌کوچیک فرقی نداره)
+
+                <input type="text" id="couponCodeInput" required placeholder="مثلاً YALDA20" style="text-transform:uppercase;">
+
+            </label>
+
+            <div class="admin-form-row">
+
+                <label>
+
+                    نوع تخفیف
+
+                    <select id="couponTypeInput">
+
+                        <option value="percent">درصدی (٪)</option>
+
+                        <option value="fixed">مبلغ ثابت (تومان)</option>
+
+                    </select>
+
+                </label>
+
+                <label>
+
+                    مقدار تخفیف
+
+                    <input type="number" id="couponValueInput" required min="0" step="1" placeholder="مثلاً ۲۰">
+
+                </label>
+
+            </div>
+
+            <label>
+
+                حداقل مبلغ سبد خرید برای استفاده از این کد (اختیاری)
+
+                <input type="number" id="couponMinOrderInput" min="0" step="1000" placeholder="مثلاً ۵۰۰۰۰۰ - خالی بذار یعنی محدودیتی نداره">
+
+            </label>
+
+            <label class="admin-stock-toggle">
+
+                <input type="checkbox" id="couponActiveInput" checked>
+
+                <span>این کد فعال باشه</span>
+
+            </label>
+
+            <button type="submit" class="admin-btn-primary admin-form-submit">
+
+                ذخیره کد تخفیف
 
             </button>
 

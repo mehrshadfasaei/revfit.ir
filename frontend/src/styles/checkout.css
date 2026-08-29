@@ -312,6 +312,157 @@ white-space:nowrap;
 
 
 /*==================================================
+        کد تخفیف (فیچر جدیده)
+==================================================*/
+
+.coupon-box{
+
+margin-bottom:20px;
+
+padding-bottom:20px;
+
+border-bottom:1px solid var(--border);
+
+}
+
+.coupon-input-row{
+
+display:flex;
+
+gap:8px;
+
+}
+
+.coupon-input-row input{
+
+flex:1;
+
+height:46px;
+
+padding:0 16px;
+
+border:1px solid var(--border);
+
+border-radius:10px;
+
+font-family:inherit;
+
+font-size:14px;
+
+}
+
+.coupon-input-row input:focus{
+
+outline:none;
+
+border-color:var(--primary);
+
+}
+
+.coupon-input-row button{
+
+height:46px;
+
+padding:0 18px;
+
+border-radius:10px;
+
+background:var(--primary);
+
+color:#fff;
+
+font-weight:700;
+
+font-size:13px;
+
+white-space:nowrap;
+
+transition:var(--transition);
+
+}
+
+.coupon-input-row button:hover{
+
+background:var(--gold);
+
+}
+
+.coupon-input-row button:disabled{
+
+opacity:.6;
+
+cursor:not-allowed;
+
+}
+
+.coupon-applied{
+
+display:flex;
+
+align-items:center;
+
+justify-content:space-between;
+
+background:#f2fbf4;
+
+border:1px solid #cdeed4;
+
+border-radius:10px;
+
+padding:12px 16px;
+
+font-size:14px;
+
+font-weight:700;
+
+color:#1e8a4c;
+
+}
+
+.coupon-applied button{
+
+background:none;
+
+color:#c0392b;
+
+font-size:12px;
+
+font-weight:700;
+
+text-decoration:underline;
+
+}
+
+.coupon-message{
+
+margin-top:8px;
+
+font-size:12px;
+
+}
+
+.coupon-message-success{
+
+color:#1e8a4c;
+
+}
+
+.coupon-message-error{
+
+color:#c0392b;
+
+}
+
+.summary-row-discount span:last-child{
+
+color:#1e8a4c;
+
+font-weight:700;
+
+}
+
+
+/*==================================================
         SUCCESS STATE
 ==================================================*/
 

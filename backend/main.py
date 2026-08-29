@@ -912,6 +912,142 @@ def update_order_status(order_number: str, payload: schemas.OrderStatusUpdate, d
 
 
 # ---------------------------------------------------------
+#   COUPONS (کد تخفیف - جدا از تخفیف روی خودِ محصول)
+# ---------------------------------------------------------
+
+def normalize_coupon_code(code: str) -> str:
+    return (code or "").strip().upper()
+
+
+def resolve_coupon(db: Session, code: str, subtotal: int):
+    """کد تخفیف رو اعتبارسنجی می‌کنه و مبلغ تخفیف رو حساب می‌کنه.
+
+    برمی‌گردونه (coupon, discount_amount, error_message) - یا کوپن
+    معتبر با مبلغ تخفیف (error_message=None)، یا (None, 0, پیام
+    خطا). عمداً exception پرت نمی‌کنه چون هم توی create_order (که
+    باید 400 بده) و هم توی /api/coupons/validate (که باید یه پاسخ
+    عادی با valid=false بده) استفاده می‌شه."""
+
+    normalized = normalize_coupon_code(code)
+
+    if not normalized:
+        return None, 0, "کد تخفیف رو وارد کن"
+
+    coupon = db.query(models.Coupon).filter(models.Coupon.code == normalized).first()
+
+    if not coupon:
+        return None, 0, "کد تخفیف معتبر نیست"
+
+    if not coupon.active:
+        return None, 0, "این کد تخفیف دیگه فعال نیست"
+
+    if coupon.min_order_amount and subtotal < coupon.min_order_amount:
+        return None, 0, f"حداقل مبلغ سبد خرید برای این کد {coupon.min_order_amount:,} تومانه".replace(",", "،")
+
+    if coupon.discount_type == "percent":
+        discount_amount = round(subtotal * coupon.discount_value / 100)
+    else:
+        discount_amount = round(coupon.discount_value)
+
+    discount_amount = max(0, min(subtotal, discount_amount))
+
+    return coupon, discount_amount, None
+
+
+@app.post("/api/coupons/validate", response_model=schemas.CouponValidateResponse)
+@limiter.limit("20/minute")
+def validate_coupon(request: Request, payload: schemas.CouponValidateRequest, db: Session = Depends(get_db)):
+    """صفحه‌ی تسویه‌حساب موقعی که مشتری دکمه‌ی «اعمال کد» رو
+    می‌زنه این رو صدا می‌زنه تا قبل از ثبت سفارش، مبلغ تخفیف رو
+    ببینه. این فقط برای پیش‌نمایشه - محاسبه‌ی واقعی و نهایی همیشه
+    دوباره داخل create_order انجام می‌شه، مستقل از این جواب."""
+
+    coupon, discount_amount, error = resolve_coupon(db, payload.code, payload.subtotal)
+
+    if error:
+        return schemas.CouponValidateResponse(valid=False, message=error, discount_amount=0)
+
+    return schemas.CouponValidateResponse(valid=True, message="کد تخفیف با موفقیت اعمال شد", discount_amount=discount_amount)
+
+
+@app.get("/api/admin/coupons", response_model=list[schemas.CouponOut], dependencies=[Depends(verify_admin)])
+def list_coupons(db: Session = Depends(get_db)):
+    return db.query(models.Coupon).order_by(models.Coupon.created_at.desc()).all()
+
+
+@app.post("/api/admin/coupons", response_model=schemas.CouponOut, dependencies=[Depends(verify_admin)])
+def create_coupon(coupon: schemas.CouponCreate, db: Session = Depends(get_db)):
+    normalized = normalize_coupon_code(coupon.code)
+
+    if not normalized:
+        raise HTTPException(status_code=400, detail="کد تخفیف نمی‌تونه خالی باشه")
+
+    if db.query(models.Coupon).filter(models.Coupon.code == normalized).first():
+        raise HTTPException(status_code=400, detail="این کد تخفیف قبلاً ثبت شده")
+
+    if coupon.discount_type == "percent":
+        if not (0 < coupon.discount_value <= 100):
+            raise HTTPException(status_code=400, detail="درصد تخفیف باید بین ۱ تا ۱۰۰ باشه")
+    elif coupon.discount_type == "fixed":
+        if coupon.discount_value <= 0:
+            raise HTTPException(status_code=400, detail="مبلغ تخفیف باید بزرگ‌تر از صفر باشه")
+    else:
+        raise HTTPException(status_code=400, detail="نوع تخفیف نامعتبره")
+
+    db_coupon = models.Coupon(
+        code=normalized,
+        discount_type=coupon.discount_type,
+        discount_value=coupon.discount_value,
+        min_order_amount=coupon.min_order_amount,
+        active=coupon.active,
+    )
+    db.add(db_coupon)
+    db.commit()
+    db.refresh(db_coupon)
+    return db_coupon
+
+
+@app.put("/api/admin/coupons/{coupon_id}", response_model=schemas.CouponOut, dependencies=[Depends(verify_admin)])
+def update_coupon(coupon_id: int, coupon: schemas.CouponUpdate, db: Session = Depends(get_db)):
+    db_coupon = db.query(models.Coupon).filter(models.Coupon.id == coupon_id).first()
+    if not db_coupon:
+        raise HTTPException(status_code=404, detail="کد تخفیف پیدا نشد")
+
+    for field, value in coupon.dict(exclude_unset=True).items():
+        setattr(db_coupon, field, value)
+
+    discount_type = db_coupon.discount_type
+    discount_value = db_coupon.discount_value
+
+    if discount_type == "percent":
+        if not (0 < discount_value <= 100):
+            raise HTTPException(status_code=400, detail="درصد تخفیف باید بین ۱ تا ۱۰۰ باشه")
+    elif discount_type == "fixed":
+        if discount_value <= 0:
+            raise HTTPException(status_code=400, detail="مبلغ تخفیف باید بزرگ‌تر از صفر باشه")
+    else:
+        raise HTTPException(status_code=400, detail="نوع تخفیف نامعتبره")
+
+    db.commit()
+    db.refresh(db_coupon)
+    return db_coupon
+
+
+@app.delete("/api/admin/coupons/{coupon_id}", dependencies=[Depends(verify_admin)])
+def delete_coupon(coupon_id: int, db: Session = Depends(get_db)):
+    db_coupon = db.query(models.Coupon).filter(models.Coupon.id == coupon_id).first()
+    if not db_coupon:
+        raise HTTPException(status_code=404, detail="کد تخفیف پیدا نشد")
+
+    # برخلاف محصول، سفارش‌ها فقط snapshot متن کد رو نگه می‌دارن
+    # (Order.coupon_code)، نه FK - پس حذف کامل همیشه امنه و سابقه‌ی
+    # سفارش‌های قدیمی دست‌نخورده می‌مونه.
+    db.delete(db_coupon)
+    db.commit()
+    return {"deleted": True}
+
+
+# ---------------------------------------------------------
 #   ORDERS (ثبت - عمومی، از صفحه‌ی checkout)
 # ---------------------------------------------------------
 
@@ -1039,6 +1175,18 @@ def create_order(
 
     subtotal = sum(item["price"] * item["quantity"] for item in verified_items)
 
+    # کد تخفیف (اختیاری) - دوباره از روی خودِ کد سمت سرور اعتبارسنجی
+    # و محاسبه می‌شه، نه مبلغی که مرورگر مشتری فرستاده. اگه کد
+    # نامعتبر باشه، کل سفارش رد می‌شه (نه اینکه بی‌صدا نادیده گرفته
+    # بشه - مشتری باید بفهمه چرا تخفیفش اعمال نشد).
+    coupon = None
+    coupon_discount = 0
+
+    if order.couponCode:
+        coupon, coupon_discount, coupon_error = resolve_coupon(db, order.couponCode, subtotal)
+        if coupon_error:
+            raise HTTPException(status_code=400, detail=coupon_error)
+
     estimated_shipping = get_shipping_cost(order.postalCode)
 
     is_cod_shipping = order.shippingPaymentType == "cod"
@@ -1048,7 +1196,7 @@ def create_order(
     # نقدی پرداخت می‌کنه)؛ ولی برای اطلاع خودمون توی سفارش ثبت می‌شه
     shipping_charged = 0 if is_cod_shipping else estimated_shipping
 
-    total = subtotal + shipping_charged
+    total = subtotal - coupon_discount + shipping_charged
 
     db_order = models.Order(
         order_number=generate_order_number(),
@@ -1065,10 +1213,15 @@ def create_order(
         shipping=shipping_charged,
         shipping_payment_type=order.shippingPaymentType or "prepaid",
         shipping_estimated=estimated_shipping,
+        coupon_code=coupon.code if coupon else None,
+        coupon_discount=coupon_discount,
         total=total,
     )
     db.add(db_order)
     db.flush()  # تا db_order.id پر بشه
+
+    if coupon:
+        coupon.usage_count = (coupon.usage_count or 0) + 1
 
     for item in verified_items:
         db.add(models.OrderItem(
