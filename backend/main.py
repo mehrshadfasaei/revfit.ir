@@ -737,6 +737,142 @@ def delete_product_image(product_id: int, image_id: int, db: Session = Depends(g
 
 
 # ---------------------------------------------------------
+#   نظر و امتیاز واقعی مشتری‌ها (verified purchase reviews)
+# ---------------------------------------------------------
+
+def mask_customer_name(full_name: str) -> str:
+    """اسم کامل رو برای نمایش عمومی (به هرکسی که صفحه‌ی محصول رو
+    باز کنه) ماسک می‌کنه - مثلاً «علی رضایی» می‌شه «علی ر.» -
+    برای حریم خصوصی مشتری. توی پنل ادمین (که فقط خودمون می‌بینیم)
+    اسم کامل بدون ماسک نشون داده می‌شه."""
+
+    parts = (full_name or "").strip().split()
+
+    if not parts:
+        return "کاربر"
+
+    if len(parts) == 1:
+        return parts[0]
+
+    return f"{parts[0]} {parts[1][0]}."
+
+
+def has_purchased_product(db: Session, customer_id: int, product_id: int) -> bool:
+    return db.query(models.OrderItem).join(models.Order).filter(
+        models.Order.customer_id == customer_id,
+        models.OrderItem.product_id == product_id,
+    ).first() is not None
+
+
+@app.get("/api/products/{product_id}/reviews", response_model=list[schemas.ReviewOut])
+def list_product_reviews(product_id: int, db: Session = Depends(get_db)):
+    reviews = db.query(models.Review).filter(
+        models.Review.product_id == product_id
+    ).order_by(models.Review.created_at.desc()).all()
+
+    return [
+        schemas.ReviewOut(
+            id=r.id,
+            customer_name=mask_customer_name(r.customer.full_name if r.customer else None),
+            rating=r.rating,
+            comment=r.comment,
+            created_at=r.created_at,
+        )
+        for r in reviews
+    ]
+
+
+@app.get("/api/products/{product_id}/can-review", response_model=schemas.CanReviewOut)
+def can_review_product(
+    product_id: int,
+    db: Session = Depends(get_db),
+    customer: models.Customer = Depends(customer_auth.get_current_customer),
+):
+    if not has_purchased_product(db, customer.id, product_id):
+        return schemas.CanReviewOut(can_review=False, reason="فقط کسایی که این محصول رو خریدن می‌تونن نظر بذارن")
+
+    already_reviewed = db.query(models.Review).filter(
+        models.Review.product_id == product_id,
+        models.Review.customer_id == customer.id,
+    ).first() is not None
+
+    if already_reviewed:
+        return schemas.CanReviewOut(can_review=False, reason="قبلاً برای این محصول نظر ثبت کردی")
+
+    return schemas.CanReviewOut(can_review=True)
+
+
+@app.post("/api/products/{product_id}/reviews", response_model=schemas.ReviewOut)
+@limiter.limit("10/minute")
+def create_review(
+    request: Request,
+    product_id: int,
+    payload: schemas.ReviewCreate,
+    db: Session = Depends(get_db),
+    customer: models.Customer = Depends(customer_auth.get_current_customer),
+):
+    db_product = db.query(models.Product).filter(models.Product.id == product_id).first()
+    if not db_product:
+        raise HTTPException(status_code=404, detail="محصول پیدا نشد")
+
+    if not has_purchased_product(db, customer.id, product_id):
+        raise HTTPException(status_code=403, detail="فقط کسایی که این محصول رو خریدن می‌تونن نظر بذارن")
+
+    if db.query(models.Review).filter(
+        models.Review.product_id == product_id,
+        models.Review.customer_id == customer.id,
+    ).first():
+        raise HTTPException(status_code=400, detail="قبلاً برای این محصول نظر ثبت کردی")
+
+    db_review = models.Review(
+        product_id=product_id,
+        customer_id=customer.id,
+        rating=payload.rating,
+        comment=sanitize_text(payload.comment) if payload.comment else None,
+    )
+    db.add(db_review)
+    db.commit()
+    db.refresh(db_review)
+
+    return schemas.ReviewOut(
+        id=db_review.id,
+        customer_name=mask_customer_name(customer.full_name),
+        rating=db_review.rating,
+        comment=db_review.comment,
+        created_at=db_review.created_at,
+    )
+
+
+@app.get("/api/admin/reviews", response_model=list[schemas.AdminReviewOut], dependencies=[Depends(verify_admin)])
+def list_all_reviews_for_admin(db: Session = Depends(get_db)):
+    reviews = db.query(models.Review).order_by(models.Review.created_at.desc()).all()
+
+    return [
+        schemas.AdminReviewOut(
+            id=r.id,
+            product_id=r.product_id,
+            product_title=r.product.title if r.product else "(محصول حذف‌شده)",
+            customer_name=r.customer.full_name if r.customer else "(کاربر حذف‌شده)",
+            rating=r.rating,
+            comment=r.comment,
+            created_at=r.created_at,
+        )
+        for r in reviews
+    ]
+
+
+@app.delete("/api/admin/reviews/{review_id}", dependencies=[Depends(verify_admin)])
+def delete_review(review_id: int, db: Session = Depends(get_db)):
+    db_review = db.query(models.Review).filter(models.Review.id == review_id).first()
+    if not db_review:
+        raise HTTPException(status_code=404, detail="نظر پیدا نشد")
+
+    db.delete(db_review)
+    db.commit()
+    return {"deleted": True}
+
+
+# ---------------------------------------------------------
 #   ORDERS (خواندن - فقط ادمین)
 # ---------------------------------------------------------
 

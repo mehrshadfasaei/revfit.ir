@@ -50,6 +50,22 @@ export async function getProductById(id) {
 }
 
 /**
+ * فیچر جدیده، معادل قدیمی نداشت - لیست نظرات واقعی یه محصول
+ * (عمومیه، همه می‌بینن، نیازی به لاگین نداره).
+ */
+export async function getProductReviews(productId) {
+    try {
+        const res = await fetch(`${API_BASE_URL}/api/products/${productId}/reviews`);
+
+        if (!res.ok) return [];
+
+        return await res.json();
+    } catch (err) {
+        return [];
+    }
+}
+
+/**
  * فیچر جدیده، معادل قدیمی نداشت - وقتی تو تسویه‌حساب کاربر یه
  * کد تخفیف وارد می‌کنه و «اعمال کد» رو می‌زنه، این صدا زده
  * می‌شه. فقط برای پیش‌نمایشه - محاسبه‌ی نهایی و امن همیشه سمت

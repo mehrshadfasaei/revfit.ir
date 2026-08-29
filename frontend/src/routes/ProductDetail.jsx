@@ -1,12 +1,13 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { getProductById, getProducts } from "../lib/api";
+import { getProductById, getProducts, getProductReviews } from "../lib/api";
 import { addToCart } from "../lib/cart";
 import { showToast } from "../lib/toast";
 import Stars from "../components/ui/Stars";
 import Accordion from "../components/ui/Accordion";
 import PriceTag from "../components/ui/PriceTag";
 import { useInView } from "../hooks/useInView";
+import { useAuth } from "../context/AuthContext";
 
 const PLACEHOLDER_RATING = 4.8;
 const SIZES = ["S", "M", "L", "XL", "2XL"];
@@ -71,7 +72,9 @@ export default function ProductDetail() {
         );
     }
 
-    const rating = product.rating ?? PLACEHOLDER_RATING;
+    // اگه نظر واقعی ثبت شده باشه (average_rating)، اون رو نشون
+    // می‌دیم؛ وگرنه همون rating دستی ادمین/پیش‌فرض قدیمی
+    const rating = product.average_rating ?? product.rating ?? PLACEHOLDER_RATING;
     const isOutOfStock = product.in_stock === false;
 
     const hasManualDescription = product.description && product.description.trim() !== "";
@@ -197,6 +200,9 @@ export default function ProductDetail() {
                                 <span className="stars" id="productStars">
                                     <Stars rating={rating} />
                                 </span>
+                                {product.review_count > 0 && (
+                                    <span className="review-count-label">({product.review_count} نظر)</span>
+                                )}
                             </div>
 
                             <PriceTag product={product} id="productPrice" />
@@ -305,22 +311,228 @@ export default function ProductDetail() {
                 </div>
             </section>
 
-            <section className="product-tabs-section">
-                <div className="container">
-                    <div className="tab-buttons">
-                        <button className="tab-btn active" data-tab="desc">
-                            توضیحات محصول
-                        </button>
-                    </div>
-                    <div className="tab-content active" id="desc">
-                        <p id="productFullDescription">{fullDesc}</p>
-                    </div>
-                </div>
-            </section>
+            <ProductTabs fullDesc={fullDesc} productId={product.id} reviewCount={product.review_count} />
 
             <PaymentBadges />
             <RelatedProducts productId={product.id} />
         </>
+    );
+}
+
+/**
+ * فیچر جدیده، معادل قدیمی نداشت - قبلاً این تب فقط یه تب ثابت
+ * («توضیحات محصول») بود، بدون سوییچ واقعی. حالا یه تب دوم
+ * («نظرات») هم داره که نظرات واقعی خریداران رو نشون می‌ده.
+ */
+function ProductTabs({ fullDesc, productId, reviewCount }) {
+    const [activeTab, setActiveTab] = useState("desc");
+    const [liveReviewCount, setLiveReviewCount] = useState(reviewCount);
+
+    return (
+        <section className="product-tabs-section">
+            <div className="container">
+                <div className="tab-buttons">
+                    <button
+                        className={`tab-btn${activeTab === "desc" ? " active" : ""}`}
+                        onClick={() => setActiveTab("desc")}
+                    >
+                        توضیحات محصول
+                    </button>
+                    <button
+                        className={`tab-btn${activeTab === "reviews" ? " active" : ""}`}
+                        onClick={() => setActiveTab("reviews")}
+                    >
+                        نظرات {liveReviewCount > 0 ? `(${liveReviewCount})` : ""}
+                    </button>
+                </div>
+
+                <div className={`tab-content${activeTab === "desc" ? " active" : ""}`}>
+                    <p id="productFullDescription">{fullDesc}</p>
+                </div>
+
+                <div className={`tab-content${activeTab === "reviews" ? " active" : ""}`}>
+                    <ReviewsPanel productId={productId} onCountChange={setLiveReviewCount} />
+                </div>
+            </div>
+        </section>
+    );
+}
+
+/**
+ * لیست نظرات واقعی + فرم ثبت نظر (فقط برای کسی که واقعاً این
+ * محصول رو خریده - verified purchase). منطق نمایش:
+ *  - همه (حتی مهمون) لیست نظرات رو می‌بینن
+ *  - اگه لاگین نباشی: پیام «برای ثبت نظر وارد شو»
+ *  - اگه لاگین باشی ولی نخریده باشی/قبلاً نظر داده باشی: فرم نشون داده نمی‌شه (canReview.reason)
+ *  - اگه واجد شرایط باشی: فرم ستاره + متن
+ */
+function ReviewsPanel({ productId, onCountChange }) {
+    const { isLoggedIn, authFetch } = useAuth();
+
+    const [reviews, setReviews] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [canReview, setCanReview] = useState(null); // { can_review, reason } | null (هنوز چک نشده) | "guest"
+
+    useEffect(() => {
+        let cancelled = false;
+
+        setLoading(true);
+
+        getProductReviews(productId).then((data) => {
+            if (cancelled) return;
+            setReviews(data);
+            setLoading(false);
+            onCountChange(data.length);
+        });
+
+        return () => {
+            cancelled = true;
+        };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [productId]);
+
+    useEffect(() => {
+        if (!isLoggedIn) {
+            setCanReview("guest");
+            return;
+        }
+
+        let cancelled = false;
+
+        authFetch(`/api/products/${productId}/can-review`)
+            .then((res) => res.json())
+            .then((data) => {
+                if (!cancelled) setCanReview(data);
+            })
+            .catch(() => {
+                if (!cancelled) setCanReview({ can_review: false, reason: null });
+            });
+
+        return () => {
+            cancelled = true;
+        };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [isLoggedIn, productId]);
+
+    function handleNewReview(review) {
+        setReviews((prev) => {
+            const next = [review, ...prev];
+            onCountChange(next.length);
+            return next;
+        });
+        setCanReview({ can_review: false, reason: "قبلاً برای این محصول نظر ثبت کردی" });
+    }
+
+    return (
+        <div className="reviews-panel">
+            {canReview === "guest" && (
+                <p className="review-login-note">
+                    برای ثبت نظر باید <Link to="/login">وارد حساب کاربری</Link> خودت بشی.
+                </p>
+            )}
+
+            {canReview && canReview !== "guest" && canReview.can_review && (
+                <ReviewForm productId={productId} authFetch={authFetch} onSubmitted={handleNewReview} />
+            )}
+
+            {loading && <p className="reviews-loading">در حال بارگذاری نظرات...</p>}
+
+            {!loading && reviews.length === 0 && <p className="reviews-empty">هنوز نظری برای این محصول ثبت نشده.</p>}
+
+            {!loading && reviews.length > 0 && (
+                <div className="reviews-list">
+                    {reviews.map((r) => (
+                        <ReviewCard key={r.id} review={r} />
+                    ))}
+                </div>
+            )}
+        </div>
+    );
+}
+
+function ReviewForm({ productId, authFetch, onSubmitted }) {
+    const [rating, setRating] = useState(5);
+    const [hoverRating, setHoverRating] = useState(0);
+    const [comment, setComment] = useState("");
+    const [submitting, setSubmitting] = useState(false);
+
+    async function handleSubmit(e) {
+        e.preventDefault();
+        setSubmitting(true);
+
+        try {
+            const res = await authFetch(`/api/products/${productId}/reviews`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ rating, comment: comment.trim() || null }),
+            });
+
+            if (!res.ok) {
+                const errData = await res.json().catch(() => null);
+                throw new Error(errData?.detail || "ثبت نظر با مشکل مواجه شد");
+            }
+
+            const review = await res.json();
+            onSubmitted(review);
+            showToast("✅ نظرت با موفقیت ثبت شد");
+        } catch (err) {
+            showToast(`⚠️ ${err.message}`);
+        } finally {
+            setSubmitting(false);
+        }
+    }
+
+    return (
+        <form className="review-form" onSubmit={handleSubmit}>
+            <h4>نظرت رو ثبت کن</h4>
+
+            <div className="review-form-stars">
+                {[1, 2, 3, 4, 5].map((n) => (
+                    <i
+                        key={n}
+                        className={`fa-solid fa-star${n <= (hoverRating || rating) ? " active" : ""}`}
+                        onClick={() => setRating(n)}
+                        onMouseEnter={() => setHoverRating(n)}
+                        onMouseLeave={() => setHoverRating(0)}
+                    ></i>
+                ))}
+            </div>
+
+            <textarea
+                placeholder="نظرت درباره‌ی این محصول رو بنویس (اختیاری)"
+                rows={3}
+                maxLength={1000}
+                value={comment}
+                onChange={(e) => setComment(e.target.value)}
+            ></textarea>
+
+            <button type="submit" className="checkout-btn review-submit-btn" disabled={submitting}>
+                {submitting ? "در حال ثبت..." : "ثبت نظر"}
+            </button>
+        </form>
+    );
+}
+
+/**
+ * از کلاس‌های ".review-card"/".review-head"/".review-name"/".review-stars"
+ * استفاده می‌کنه - این‌ها از قبل تو product.css تعریف شده بودن
+ * (ظاهراً برای همین فیچر آماده شده بودن ولی هیچ‌جا استفاده
+ * نمی‌شدن) پس دقیقاً همون افکت fade-in-on-scroll رو (مثل
+ * PaymentBox/RelatedCard) می‌گیره.
+ */
+function ReviewCard({ review }) {
+    const [ref, inView] = useInView();
+
+    return (
+        <div className={`review-card${inView ? " show" : ""}`} ref={ref}>
+            <div className="review-head">
+                <span className="review-name">{review.customer_name}</span>
+                <span className="review-stars">
+                    <Stars rating={review.rating} />
+                </span>
+            </div>
+            {review.comment && <p>{review.comment}</p>}
+        </div>
     );
 }
 

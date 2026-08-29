@@ -896,6 +896,133 @@ line-height:1.8;
 
 
 /*==================================================
+        نظرات واقعی مشتری‌ها (فیچر جدیده)
+==================================================*/
+
+.review-count-label{
+
+font-size:13px;
+
+color:var(--secondary);
+
+}
+
+.reviews-panel{
+
+max-width:800px;
+
+}
+
+.review-login-note,
+.reviews-loading,
+.reviews-empty{
+
+color:var(--secondary);
+
+font-size:14px;
+
+}
+
+.review-login-note a{
+
+color:var(--primary);
+
+font-weight:700;
+
+text-decoration:underline;
+
+}
+
+.review-form{
+
+background:var(--gray);
+
+border-radius:16px;
+
+padding:24px;
+
+margin-bottom:26px;
+
+display:flex;
+
+flex-direction:column;
+
+gap:14px;
+
+}
+
+.review-form h4{
+
+font-size:15px;
+
+font-weight:800;
+
+color:var(--primary);
+
+}
+
+.review-form-stars{
+
+display:flex;
+
+gap:6px;
+
+font-size:22px;
+
+color:var(--border);
+
+}
+
+.review-form-stars i{
+
+cursor:pointer;
+
+transition:.2s;
+
+}
+
+.review-form-stars i.active{
+
+color:var(--gold);
+
+}
+
+.review-form textarea{
+
+width:100%;
+
+padding:14px 16px;
+
+border:1px solid var(--border);
+
+border-radius:10px;
+
+font-family:inherit;
+
+font-size:14px;
+
+resize:vertical;
+
+}
+
+.review-form textarea:focus{
+
+outline:none;
+
+border-color:var(--primary);
+
+}
+
+.review-form .review-submit-btn{
+
+width:auto;
+
+padding:0 30px;
+
+}
+
+
+/*==================================================
         PAYMENT / TRUST BADGES
 ==================================================*/
 

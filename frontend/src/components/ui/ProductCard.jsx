@@ -19,7 +19,9 @@ function secondImageOf(product) {
  *                 فقط عنوان + دکمه‌ی «مشاهده محصول»)
  */
 export default function ProductCard({ product, variant = "grid", className }) {
-    const rating = product.rating ?? PLACEHOLDER_RATING;
+    // اگه نظر واقعی ثبت شده باشه (average_rating)، اون رو نشون
+    // می‌دیم؛ وگرنه همون rating دستی ادمین/پیش‌فرض قدیمی
+    const rating = product.average_rating ?? product.rating ?? PLACEHOLDER_RATING;
     const isOutOfStock = product.in_stock === false;
     const secondImage = secondImageOf(product);
     const href = `/product/${product.id}`;
