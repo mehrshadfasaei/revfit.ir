@@ -6,7 +6,7 @@ Order        -> هر سفارش ثبت‌شده از صفحه‌ی checkout.html
 OrderItem    -> ردیف‌های داخل هر سفارش (کدوم محصول، چند عدد)
 """
 
-from sqlalchemy import Column, Integer, String, Float, DateTime, ForeignKey, Text, Boolean, LargeBinary
+from sqlalchemy import Column, Integer, String, Float, DateTime, ForeignKey, Text, Boolean, LargeBinary, UniqueConstraint
 from sqlalchemy.orm import relationship
 from datetime import datetime
 
@@ -69,6 +69,27 @@ class Product(Base):
         back_populates="product",
         cascade="all, delete-orphan"
     )
+
+    reviews = relationship(
+        "Review",
+        back_populates="product",
+        cascade="all, delete-orphan"
+    )
+
+    @property
+    def review_count(self) -> int:
+        return len(self.reviews)
+
+    @property
+    def average_rating(self):
+        """میانگین امتیاز نظرات واقعی - اگه هنوز نظری ثبت نشده،
+        None برمی‌گردونه تا فرانت‌اند به rating دستی ادمین (همون
+        مقدار پیش‌فرض قدیمی) برگرده."""
+
+        if not self.reviews:
+            return None
+
+        return round(sum(r.rating for r in self.reviews) / len(self.reviews), 1)
 
 
 class ProductStock(Base):
@@ -161,6 +182,26 @@ class Coupon(Base):
     active = Column(Boolean, default=True, nullable=False)
     usage_count = Column(Integer, default=0, nullable=False)  # فقط برای گزارش ادمین - محدودکننده نیست
     created_at = Column(DateTime, default=datetime.utcnow)
+
+
+class Review(Base):
+    """نظر و امتیاز واقعی مشتری روی یه محصول - فقط کسی که واقعاً
+    اون محصول رو خریده (verified purchase) می‌تونه ثبت کنه، و هر
+    مشتری فقط یه نظر می‌تونه برای هر محصول بذاره (UniqueConstraint
+    پایین)."""
+
+    __tablename__ = "reviews"
+    __table_args__ = (UniqueConstraint("product_id", "customer_id", name="uq_review_product_customer"),)
+
+    id = Column(Integer, primary_key=True, index=True)
+    product_id = Column(Integer, ForeignKey("products.id"), nullable=False)
+    customer_id = Column(Integer, ForeignKey("customers.id"), nullable=False)
+    rating = Column(Integer, nullable=False)   # ۱ تا ۵
+    comment = Column(Text, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    product = relationship("Product", back_populates="reviews")
+    customer = relationship("Customer")
 
 
 class ErrorLog(Base):

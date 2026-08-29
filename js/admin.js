@@ -419,6 +419,8 @@ document.querySelectorAll(".admin-nav-link").forEach(link => {
 
         if(link.dataset.tab === "coupons") loadCoupons();
 
+        if(link.dataset.tab === "reviews") loadReviews();
+
     });
 
 });
@@ -1280,6 +1282,84 @@ document.getElementById("adminCouponsTableBody").addEventListener("click", (e) =
 
     if(editBtn) openCouponModal(Number(editBtn.dataset.id));
     if(deleteBtn) deleteCoupon(Number(deleteBtn.dataset.id));
+
+});
+
+
+/*====================================
+        REVIEWS (نظر و امتیاز واقعی مشتری‌ها - فیچر جدیده)
+====================================*/
+
+async function loadReviews(){
+
+    const tbody = document.getElementById("adminReviewsTableBody");
+
+    try{
+
+        const res = await fetchWithRetry(`${API_BASE_URL}/api/admin/reviews`, {
+
+            headers: adminHeaders()
+
+        });
+
+        const reviews = await res.json();
+
+        if(reviews.length === 0){
+            tbody.innerHTML = `<tr class="admin-empty-row"><td colspan="6">هنوز نظری ثبت نشده.</td></tr>`;
+            return;
+        }
+
+        tbody.innerHTML = reviews.map(r => `
+            <tr>
+                <td>${r.product_title}</td>
+                <td>${r.customer_name}</td>
+                <td>${"⭐".repeat(r.rating)}</td>
+                <td>${r.comment ? r.comment : "<em>(بدون متن)</em>"}</td>
+                <td>${formatTehranDate(r.created_at)}</td>
+                <td>
+                    <div class="admin-table-actions">
+                        <button class="admin-action-btn delete" data-id="${r.id}" title="حذف">
+                            <i class="fa-solid fa-trash"></i>
+                        </button>
+                    </div>
+                </td>
+            </tr>
+        `).join("");
+
+    }catch(err){
+
+        tbody.innerHTML = `<tr class="admin-empty-row"><td colspan="6">اتصال به بک‌اند برقرار نشد.</td></tr>`;
+
+    }
+
+}
+
+document.getElementById("adminReviewsTableBody").addEventListener("click", async (e) => {
+
+    const deleteBtn = e.target.closest(".delete");
+    if(!deleteBtn) return;
+
+    if(!confirm("مطمئنی می‌خوای این نظر رو حذف کنی؟")) return;
+
+    try{
+
+        const res = await fetchWithRetry(`${API_BASE_URL}/api/admin/reviews/${deleteBtn.dataset.id}`, {
+
+            method: "DELETE",
+
+            headers: adminHeaders()
+
+        });
+
+        if(!res.ok) throw new Error("خطا در حذف");
+
+        loadReviews();
+
+    }catch(err){
+
+        alert("حذف نظر با مشکل مواجه شد.");
+
+    }
 
 });
 

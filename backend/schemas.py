@@ -43,6 +43,8 @@ class ProductOut(BaseModel):
     discount_value: Optional[float] = None
     discount_active: bool = False
     final_price: int   # قیمت واقعی بعد از تخفیف (اگه تخفیفی نباشه، همون price)
+    review_count: int = 0
+    average_rating: Optional[float] = None   # میانگین نظرات واقعی - اگه نظری نباشه None (فرانت به rating برمی‌گرده)
     images: List[ProductImageOut] = []
     stock: List[ProductStockOut] = []
 
@@ -291,3 +293,35 @@ class AuthTokenOut(BaseModel):
 class CustomerUpdate(BaseModel):
     fullName: Optional[str] = Field(None, max_length=100)
     phone: Optional[str] = Field(None, max_length=20)
+
+
+# ---------------------------------------------------------
+#   نظر و امتیاز واقعی مشتری‌ها (verified purchase reviews)
+# ---------------------------------------------------------
+
+class ReviewCreate(BaseModel):
+    rating: int = Field(..., ge=1, le=5)
+    comment: Optional[str] = Field(None, max_length=1000)
+
+
+class ReviewOut(BaseModel):
+    id: int
+    customer_name: str    # نام ماسک‌شده (مثلاً «علی ر.») - نه اسم کامل، برای حریم خصوصی
+    rating: int
+    comment: Optional[str] = None
+    created_at: datetime
+
+
+class CanReviewOut(BaseModel):
+    can_review: bool
+    reason: Optional[str] = None    # وقتی can_review=false، چرا (برای نمایش به کاربر)
+
+
+class AdminReviewOut(BaseModel):
+    id: int
+    product_id: int
+    product_title: str
+    customer_name: str    # اینجا (فقط برای ادمین) اسم کامل نشون داده می‌شه، نه ماسک‌شده
+    rating: int
+    comment: Optional[str] = None
+    created_at: datetime
