@@ -450,17 +450,25 @@ async function loadProducts(){
 
         }
 
-        tbody.innerHTML = allProducts.map(p => `
+        tbody.innerHTML = allProducts.map(p => {
+
+            const hasDiscount = p.discount_active && p.final_price != null && p.final_price < p.price;
+
+            const priceCell = hasDiscount
+                ? `<span class="admin-price-old">${formatPrice(p.price)} تومان</span><span class="admin-price-new">${formatPrice(p.final_price)} تومان</span>`
+                : `${formatPrice(p.price)} تومان`;
+
+            return `
 
             <tr class="${p.is_archived ? "admin-row-archived" : ""}">
 
                 <td><img src="${p.image}" alt="${p.title}"></td>
 
-                <td>${p.title}${p.is_archived ? '<span class="admin-archived-badge">بایگانی‌شده</span>' : ""}</td>
+                <td>${p.title}${p.is_archived ? '<span class="admin-archived-badge">بایگانی‌شده</span>' : ""}${hasDiscount ? '<span class="admin-discount-badge">🔥 تخفیف</span>' : ""}</td>
 
                 <td>${p.category}</td>
 
-                <td>${formatPrice(p.price)} تومان</td>
+                <td>${priceCell}</td>
 
                 <td>${p.rating} ⭐</td>
 
@@ -506,7 +514,9 @@ async function loadProducts(){
 
             </tr>
 
-        `).join("");
+        `;
+
+        }).join("");
 
     }catch(err){
 
@@ -1235,6 +1245,49 @@ document.getElementById("productCategorySelect").addEventListener("change", (e) 
 
 });
 
+/**
+ * تخفیف/جشنواره (فیچر جدیده) - نمایش/مخفی‌کردن فیلدهای نوع و
+ * مقدار تخفیف بر اساس تیک «تخفیف فعال باشه»، و یه پیش‌نمایش
+ * زنده‌ی «قیمت نهایی» زیرش که با تایپ‌کردن آپدیت می‌شه (فقط
+ * برای راهنمایی چشمی ادمین - محاسبه‌ی واقعی و اعتبارسنجی نهایی
+ * همیشه سمت سرور انجام می‌شه).
+ */
+function updateDiscountFieldsVisibility(){
+
+    const active = document.getElementById("productDiscountActiveInput").checked;
+    const fieldsRow = document.getElementById("discountFieldsRow");
+    const preview = document.getElementById("discountFinalPricePreview");
+
+    fieldsRow.style.display = active ? "grid" : "none";
+
+    if(!active){
+        preview.style.display = "none";
+        return;
+    }
+
+    const price = Number(document.getElementById("productPriceInput").value) || 0;
+    const type = document.getElementById("productDiscountTypeInput").value;
+    const value = Number(document.getElementById("productDiscountValueInput").value) || 0;
+
+    if(price <= 0 || value <= 0){
+        preview.style.display = "none";
+        return;
+    }
+
+    const finalPrice = type === "percent"
+        ? Math.round(price - (price * value / 100))
+        : Math.round(price - value);
+
+    preview.style.display = "flex";
+    preview.innerHTML = finalPrice > 0 && finalPrice < price
+        ? `<i class="fa-solid fa-tag"></i> قیمت نهایی بعد از تخفیف: <strong>${formatPrice(finalPrice)} تومان</strong>`
+        : `<i class="fa-solid fa-triangle-exclamation"></i> مقدار تخفیف نامعتبره (باید کمتر از قیمت محصول باشه)`;
+}
+
+["productDiscountActiveInput", "productDiscountTypeInput", "productDiscountValueInput", "productPriceInput"].forEach(id => {
+    document.getElementById(id).addEventListener("input", updateDiscountFieldsVisibility);
+});
+
 function openProductModal(id = null){
 
     productForm.reset();
@@ -1265,6 +1318,12 @@ function openProductModal(id = null){
 
         document.getElementById("productInStockInput").checked = product.in_stock !== false;
 
+        document.getElementById("productDiscountActiveInput").checked = product.discount_active === true;
+
+        document.getElementById("productDiscountTypeInput").value = product.discount_type || "percent";
+
+        document.getElementById("productDiscountValueInput").value = product.discount_value ?? "";
+
         currentGalleryImages = [
 
             { id: null, image_url: product.image, isCover: true },
@@ -1282,6 +1341,8 @@ function openProductModal(id = null){
         populateCategorySelect(null);
 
     }
+
+    updateDiscountFieldsVisibility();
 
     renderGalleryPreview();
 
@@ -1606,11 +1667,42 @@ productForm.addEventListener("submit", async (e) => {
 
         }
 
+        const price = Number(document.getElementById("productPriceInput").value);
+        const discountActive = document.getElementById("productDiscountActiveInput").checked;
+        const discountType = document.getElementById("productDiscountTypeInput").value;
+        const discountValueRaw = document.getElementById("productDiscountValueInput").value;
+        const discountValue = discountValueRaw === "" ? null : Number(discountValueRaw);
+
+        if(discountActive){
+
+            if(discountValue === null || discountValue <= 0){
+                alert("برای فعال‌کردن تخفیف، باید مقدار تخفیف رو وارد کنی.");
+                submitBtn.disabled = false;
+                submitBtn.textContent = "ذخیره محصول";
+                return;
+            }
+
+            if(discountType === "percent" && discountValue > 100){
+                alert("درصد تخفیف نمی‌تونه بیشتر از ۱۰۰ باشه.");
+                submitBtn.disabled = false;
+                submitBtn.textContent = "ذخیره محصول";
+                return;
+            }
+
+            if(discountType === "fixed" && discountValue >= price){
+                alert("مبلغ تخفیف باید کمتر از قیمت محصول باشه.");
+                submitBtn.disabled = false;
+                submitBtn.textContent = "ذخیره محصول";
+                return;
+            }
+
+        }
+
         const payload = {
 
             title: document.getElementById("productTitleInput").value,
 
-            price: Number(document.getElementById("productPriceInput").value),
+            price: price,
 
             category: categoryValue,
 
@@ -1618,7 +1710,13 @@ productForm.addEventListener("submit", async (e) => {
 
             in_stock: document.getElementById("productInStockInput").checked,
 
-            rating: Number(document.getElementById("productRatingInput").value)
+            rating: Number(document.getElementById("productRatingInput").value),
+
+            discount_active: discountActive,
+
+            discount_type: discountActive ? discountType : null,
+
+            discount_value: discountActive ? discountValue : null
 
         };
 

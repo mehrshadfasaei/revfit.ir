@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import Stars from "./Stars";
-import { formatPrice } from "../../lib/format";
+import PriceTag from "./PriceTag";
 
 const PLACEHOLDER_RATING = 4.8;
 
@@ -71,7 +71,7 @@ export default function ProductCard({ product, variant = "grid", className }) {
                         <Stars rating={rating} />
                     </span>
                 </div>
-                <span className="price">{formatPrice(product.price)} تومان</span>
+                <PriceTag product={product} />
                 {isOutOfStock && <span className="card-out-of-stock-label">ناموجود</span>}
             </Link>
         </div>

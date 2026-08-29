@@ -39,6 +39,10 @@ class ProductOut(BaseModel):
     is_archived: bool = False
     rating: float
     sales: int
+    discount_type: Optional[str] = None
+    discount_value: Optional[float] = None
+    discount_active: bool = False
+    final_price: int   # قیمت واقعی بعد از تخفیف (اگه تخفیفی نباشه، همون price)
     images: List[ProductImageOut] = []
     stock: List[ProductStockOut] = []
 
@@ -55,6 +59,9 @@ class ProductCreate(BaseModel):
     in_stock: bool = True
     rating: float = 4.8
     sales: int = 0
+    discount_type: Optional[str] = None      # "percent" | "fixed" | None
+    discount_value: Optional[float] = None
+    discount_active: bool = False
     images: List[str] = []          # آدرس عکس‌های اضافه‌ی گالری (غیر از عکس اصلی)
     stock: List[ProductStockItem] = []   # موجودی هر سایز
 
@@ -69,6 +76,9 @@ class ProductUpdate(BaseModel):
     is_archived: Optional[bool] = None
     rating: Optional[float] = None
     sales: Optional[int] = None
+    discount_type: Optional[str] = None
+    discount_value: Optional[float] = None
+    discount_active: Optional[bool] = None
 
 
 class ProductImageCreate(BaseModel):

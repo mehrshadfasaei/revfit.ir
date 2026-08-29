@@ -3,6 +3,21 @@
         (پورت‌شده از js/shop-data.js)
 ====================================*/
 
+/**
+ * تشخیص این‌که یه محصول واقعاً الان تخفیف‌خورده نشون داده بشه یا
+ * نه - هم فعال بودن تخفیف رو چک می‌کنه هم اینکه final_price
+ * واقعاً کمتر از price باشه (محض احتیاط، اگه بک‌اند final_price
+ * رو نفرستاده باشه - مثلاً یه پاسخ mock قدیمی - چیزی نشکنه).
+ */
+export function isDiscounted(product) {
+    return Boolean(
+        product &&
+        product.discount_active &&
+        product.final_price != null &&
+        product.final_price < product.price
+    );
+}
+
 export function formatPrice(number) {
     try {
         return number.toLocaleString("fa-IR");
