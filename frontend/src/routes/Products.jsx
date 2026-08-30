@@ -49,8 +49,10 @@ export default function Products() {
 
     // فیلتر دسته‌بندی/قیمت (فیچر جدیده) - دسته‌بندی از خودِ لیست
     // محصولات استخراج می‌شه (نه یه لیست ثابت جایی)، پس هر دسته‌ای
-    // که ادمین اضافه کنه خودکار این‌جا هم ظاهر می‌شه
-    const [category, setCategory] = useState("all");
+    // که ادمین اضافه کنه خودکار این‌جا هم ظاهر می‌شه. مقدار اولیه
+    // از ?category= تو URL خونده می‌شه - منوی موبایل با همین
+    // مسیر لینک می‌ده (مثلاً /products?category=هودی)
+    const [category, setCategory] = useState(() => searchParams.get("category") || "all");
     const [priceMinInput, setPriceMinInput] = useState("");
     const [priceMaxInput, setPriceMaxInput] = useState("");
     const [priceMin, setPriceMin] = useState("");
