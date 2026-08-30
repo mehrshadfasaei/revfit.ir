@@ -176,7 +176,8 @@ display:none;
 }
 
 .mobile-menu-header,
-.mobile-menu-search-row{
+.mobile-menu-search-row,
+.mobile-menu-expandable{
 
 display:none;
 
@@ -2065,6 +2066,18 @@ background:var(--gray);
 }
 
 .mobile-menu-link{
+
+display:block;
+
+}
+
+.desktop-products-link{
+
+display:none;
+
+}
+
+.mobile-menu-expandable{
 
 display:block;
 

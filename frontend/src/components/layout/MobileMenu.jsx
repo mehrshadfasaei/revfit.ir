@@ -68,6 +68,17 @@ export default function MobileMenu({ open, onClose, onOpenSearch, cartCount }) {
                 </NavLink>
             </li>
 
+            {/* دسکتاپ: همون لینک ساده‌ی قبلی، بدون زیرمنو - ".nav-links" هم
+                منوی موبایل هم نوار ناوبری دسکتاپه، پس این <li> با CSS
+                فقط رو دسکتاپ دیده می‌شه (رجوع کن به .desktop-products-link) */}
+            <li className="desktop-products-link">
+                <NavLink to="/products" className={navActiveClass} onClick={onClose}>
+                    محصولات
+                </NavLink>
+            </li>
+
+            {/* موبایل: دکمه‌ی بازکننده‌ی زیرمنوی دسته‌بندی‌ها - با CSS فقط
+                رو موبایل دیده می‌شه (رجوع کن به .mobile-menu-expandable) */}
             <li className="mobile-menu-expandable">
                 <button
                     type="button"
