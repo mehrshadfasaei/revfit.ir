@@ -1,5 +1,7 @@
+import { useRef, useState } from "react";
 import { NavLink } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
+import { getProducts } from "../../lib/api";
 
 const navActiveClass = ({ isActive }) => (isActive ? "active-link" : undefined);
 
@@ -13,6 +15,33 @@ const navActiveClass = ({ isActive }) => (isActive ? "active-link" : undefined);
  */
 export default function MobileMenu({ open, onClose, onOpenSearch, cartCount }) {
     const { isLoggedIn } = useAuth();
+
+    // زیرمنوی دسته‌بندی‌ها (فیچر جدیده) - با زدن رو «محصولات» باز
+    // می‌شه، دسته‌بندی‌ها رو فقط همون لحظه‌ی اول‌بار باز شدن
+    // می‌گیریم (نه رو هر لود صفحه، چون MobileMenu تو همه‌ی
+    // صفحه‌ها رندر می‌شه و اکثر وقت‌ها اصلاً باز نمی‌شه - گرفتنش
+    // رو هر لود صفحه یعنی یه درخواست اضافی مفت‌ومجانی به بک‌اند).
+    // چون خودِ دسته‌بندی‌ها از روی محصولات واقعی استخراج می‌شن،
+    // هر دسته‌ی جدیدی که ادمین اضافه کنه خودکار این‌جا هم میاد.
+    const [productsMenuOpen, setProductsMenuOpen] = useState(false);
+    const [categories, setCategories] = useState([]);
+    const [loadingCategories, setLoadingCategories] = useState(false);
+    const categoriesFetchedRef = useRef(false);
+
+    function handleToggleProductsMenu() {
+        const next = !productsMenuOpen;
+        setProductsMenuOpen(next);
+
+        if (next && !categoriesFetchedRef.current) {
+            categoriesFetchedRef.current = true;
+            setLoadingCategories(true);
+
+            getProducts().then((products) => {
+                setCategories([...new Set(products.map((p) => p.category))].sort());
+                setLoadingCategories(false);
+            });
+        }
+    }
 
     return (
         <ul className={`nav-links${open ? " active" : ""}`}>
@@ -38,11 +67,39 @@ export default function MobileMenu({ open, onClose, onOpenSearch, cartCount }) {
                     خانه
                 </NavLink>
             </li>
-            <li>
-                <NavLink to="/products" className={navActiveClass} onClick={onClose}>
+
+            <li className="mobile-menu-expandable">
+                <button
+                    type="button"
+                    className={`mobile-menu-expand-trigger${productsMenuOpen ? " open" : ""}`}
+                    onClick={handleToggleProductsMenu}
+                >
                     محصولات
-                </NavLink>
+                    <i className="fa-solid fa-chevron-down"></i>
+                </button>
+
+                {productsMenuOpen && (
+                    <ul className="mobile-category-submenu">
+                        <li>
+                            <NavLink to="/products" end className={navActiveClass} onClick={onClose}>
+                                همه محصولات
+                            </NavLink>
+                        </li>
+
+                        {loadingCategories && <li className="mobile-category-loading">در حال بارگذاری...</li>}
+
+                        {!loadingCategories &&
+                            categories.map((c) => (
+                                <li key={c}>
+                                    <NavLink to={`/products?category=${encodeURIComponent(c)}`} onClick={onClose}>
+                                        {c}
+                                    </NavLink>
+                                </li>
+                            ))}
+                    </ul>
+                )}
             </li>
+
             <li>
                 <NavLink to="/about" className={navActiveClass} onClick={onClose}>
                     درباره ما
